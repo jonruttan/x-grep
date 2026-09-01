@@ -1,0 +1,18 @@
+; lang.xon -- what this bundle IS.
+;
+; FORMAT (one form per line):
+;   (lang "NAME")               the -l name
+;   (dialect NAME)              he | xe | rn -- a REQUIREMENT, not a taste
+;   (requires-release "TAG")    the x-lang this bundle was built against
+;   (entry "FILE")              loaded AFTER the dialect, not instead of it
+
+(lang "grep")
+
+; RADON for the same reason x-awk is: a grep that cannot open the files
+; named on its command line is a demo, and File's doors are radon
+; opt-ins.  The matching core itself is pure.
+(dialect rn)
+
+(requires-release "v0.9.0")
+
+(entry "run.x")
