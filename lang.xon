@@ -13,6 +13,6 @@
 ; opt-ins.  The matching core itself is pure.
 (dialect rn)
 
-(requires-release "v0.9.0")
+(requires-release "v0.10.0")
 
 (entry "run.x")
