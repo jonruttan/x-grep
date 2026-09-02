@@ -1,5 +1,7 @@
 # x-grep
 
+<p align="center"><img src="docs/bitwise-banner.svg" alt="x-grep, with Bitwise the owl" width="100%"></p>
+
 POSIX grep on x-lang, the second tool of the self-hosting arc (x-awk is
 the first; x-lang's `docs/bootstrap-closure.md` measured grep as the
 build's single most-invoked external, 4,186 calls).  BRE by default
@@ -46,3 +48,5 @@ every expectation taken from a real grep run.
     grep/core.x       options, the line loop, the status
     grep/cli.x        argv stripping, stdin reclaim, grep-main (the exit)
     tests/            markdown specs + the platform's runner, vendored nowhere
+
+<p align="center"><img src="docs/bitwise-mark.svg" alt="Bitwise" width="96"></p>
