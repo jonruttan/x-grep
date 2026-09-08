@@ -27,6 +27,8 @@ install: ## Install into <share>/langs/grep
 	cp -R $(PAYLOAD) "$(DEST)/"
 	printf '%s\n' '$(LANG_VERSION)' > "$(DEST)/version"
 	@echo "x-grep: installed to $(DEST)"
+	@echo "x-grep: writing the boot image"
+	"$(X)" --image -l grep || true
 	@echo "x-grep: try  x -l grep"
 
 .PHONY: uninstall
