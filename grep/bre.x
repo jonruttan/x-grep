@@ -33,10 +33,12 @@
 ; case-expand these
 (def %grep-esc-special?
   (fn (_ b)
-    (if (= b 98) #t (if (= b 66) #t          ; b B
-      (if (= b 100) #t (if (= b 68) #t       ; d D
-        (if (= b 115) #t (if (= b 83) #t     ; s S
-          (if (= b 119) #t (= b 87))))))))))  ; w W
+    (match
+      ((= b 98) #t)  ((= b 66) #t)           ; b B
+      ((= b 100) #t) ((= b 68) #t)           ; d D
+      ((= b 115) #t) ((= b 83) #t)           ; s S
+      ((= b 119) #t) ((= b 87) #t)           ; w W
+      (#t #f))))
 
 ; Copy a [...] class, expanding case when ci: each letter (or letter
 ; range) also emits its swapped twin.  Answers (pieces . next-i),
@@ -112,8 +114,9 @@
                       (Err raise (lit grep)
                         "grep: back-references are not supported" pat)
                       (if (if bre?
-                            (if (= e 40) #t (if (= e 41) #t
-                              (if (= e 123) #t (= e 125))))
+                            (match ((= e 40) #t) ((= e 41) #t)
+                                   ((= e 123) #t) ((= e 125) #t)
+                                   (#t #f))
                             #f)
                         ; BRE \( \) \{ \} are the OPERATORS: unescape
                         (self (+ i 2) (pair (%grep-b->s e) acc))
@@ -127,9 +130,10 @@
                             (pair (string-append "\\" (%grep-b->s e))
                               acc)))))))
                 (if (if bre?
-                      (if (= b 40) #t (if (= b 41) #t
-                        (if (= b 123) #t (if (= b 125) #t
-                          (if (= b 43) #t (if (= b 63) #t (= b 124)))))))
+                      (match ((= b 40) #t) ((= b 41) #t)
+                             ((= b 123) #t) ((= b 125) #t)
+                             ((= b 43) #t)  ((= b 63) #t)
+                             ((= b 124) #t) (#t #f))
                       #f)
                   ; BRE bare ( ) { } + ? | are LITERAL: escape for the engine
                   (self (+ i 1)
