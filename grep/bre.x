@@ -6,19 +6,17 @@
 ; @copyright 2026 Jon Ruttan
 ; @license MIT No Attribution (MIT-0)
 ;
-; THE DIALECT GAP IS THE WHOLE FILE.  POSIX grep speaks BRE by default,
-; where ( ) { } + ? | are LITERAL and \( \) \{ \} are the operators;
-; lib/x/type/regex.x speaks an ERE-shaped dialect.  So BRE translates by
-; swapping the escapes: bare grouping characters gain a backslash, the
-; backslashed operators lose theirs.  -E passes through (the engine's
-; dialect is POSIX-ERE-shaped).  Case-insensitivity is compiled INTO the
-; pattern: a literal letter becomes its two-case class, a class entry
-; gains its swapped twin -- no engine flag needed.  -w wraps the whole
-; pattern in \b( )\b, the engine's own word anchors.
+; POSIX grep speaks BRE by default, where ( ) { } + ? | are literal and \( \)
+; \{ \} are the operators; lib/x/type/regex.x speaks an ERE-shaped dialect. So
+; BRE translates by swapping the escapes: bare grouping characters gain a
+; backslash, the backslashed operators lose theirs. -E passes through.
+; Case-insensitivity is compiled into the pattern -- a literal letter becomes
+; its two-case class, a class entry gains its swapped twin -- so no engine flag
+; is needed; -w wraps the pattern in \b( )\b, the engine's word anchors.
 ;
-; Refused loudly: back-references \1-\9 (the engine cannot), and
-; [:named:] classes (pending upstream).  A loud error beats a silent
-; wrong match.
+; Refused loudly, because a loud error beats a silent wrong match:
+; back-references \1-\9 (the engine cannot) and [:named:] classes (pending
+; upstream).
 
 ; case-swap a letter byte, else nil
 (def %grep-swap
