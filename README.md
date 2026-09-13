@@ -37,7 +37,17 @@ every expectation taken from a real grep run.
 ## Tests
 
     make test           # the suite, loud on any failure
-    make check          # judged against tests/contract/known-failures.txt
+    make lint           # this bundle's sources, through x-lang's linter
+    make check          # lint, then judged against tests/contract/known-failures.txt
+
+`make lint` shims onto the platform's lang kit and vendors nothing.  All six
+files are clean, `--strict` included -- which is not luck: #3 ("match, not a
+ladder of ifs") already did by hand what the linter's `ladder` rule asks for,
+before anything could run the rule here.  This is what keeps it true.
+
+It is also the one bundle of the set that needs no capability probe: it
+declares no `requires-lang` and ships no `constructs.x`, so it gates on any x
+that carries the kit at all -- v0.14.0 included.
 
 ## Layout
 
@@ -48,5 +58,6 @@ every expectation taken from a real grep run.
     grep/core.x       options, the line loop, the status
     grep/cli.x        argv stripping, stdin reclaim, grep-main (the exit)
     tests/            markdown specs + the platform's runner, vendored nowhere
+    tests/lint.sh     shims onto the lang kit's linter -- vendors nothing
 
 <p align="center"><img src="docs/bitwise-mark.svg" alt="Bitwise" width="96"></p>

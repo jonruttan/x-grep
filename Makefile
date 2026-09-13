@@ -41,8 +41,18 @@ test: ## Run the spec suite (every failure is loud)
 	X="$(X)" sh tests/spec-runner.sh
 
 .PHONY: check
-check: ## Run the suite against tests/contract/known-failures.txt -- what CI gates on
+check: lint ## Run the suite against tests/contract/known-failures.txt -- what CI gates on
 	X="$(X)" sh tests/spec-gate.sh
+
+# EVERY RULE THE PLATFORM'S LINTER KNOWS, on this bundle's own sources.
+# It rides `check` rather than a tier of its own: what it catches -- a
+# nested-if ladder, a definition nothing reads -- is invisible in a diff
+# that only shows the new arm, which is the same argument the suite makes
+# for itself.  #3 removed this bundle's ladders by hand before anything
+# could run the rule here; this is what keeps them gone.
+.PHONY: lint
+lint: ## Lint the bundle's own sources -- structural rules gated
+	X="$(X)" sh tests/lint.sh
 
 .PHONY: bundle
 bundle: ## Roll a release tarball and print its pin
