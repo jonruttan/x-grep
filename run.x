@@ -1,6 +1,6 @@
 ; # x-grep -- POSIX grep on x-lang
 ;
-; ## run.x -- THE entry
+; ## run.x -- the entry point
 ;
 ; @description A POSIX grep: BRE by default, -E for ERE, -F for fixed
 ;   strings, on lib/x/type/regex.x.  The second tool of the self-hosting
@@ -12,11 +12,11 @@
 ; Usage:
 ;   x -l grep -- [-EFcilnqsvwx] [-e pat]... [-f patfile]... [pat] [file]...
 ;
-; THIS FILE KNOWS NO PATHS: x.sh boots the dialect, arms the bundle root,
-; and cats this file.  Operands mean "be grep" -- grep-main runs and
-; EXITS with grep's own status (0 match, 1 none, 2 trouble), so the
-; launcher never starts a REPL under a batch run.  No operands is the x
-; REPL with the core loaded: (grep-run ARGV INPUT) at a prompt.
+; This file contains no path literals: x.sh boots the dialect, arms the bundle
+; root, and cats this file. With operands, grep-main runs and exits with grep's
+; own status (0 match, 1 none, 2 trouble), so the launcher never starts a REPL
+; under a batch run. With no operands it is the x REPL with the core loaded:
+; (grep-run ARGV INPUT) at a prompt.
 (import grep/base)
 
 (set! %lang-name "GREP")
