@@ -37,7 +37,10 @@
 (def make-string (fn (_ n c) (Str8 make n c)))
 
 (def %cvt (prim-ref (lit convert) (lit to)))
-(def list->string (fn (_ l) (if (null? l) "" (%cvt l %string))))
+; The string type's handle, fetched by name through the platform's public
+; door.
+(def %grep-string-type (Type named STRING))
+(def list->string (fn (_ l) (if (null? l) "" (%cvt l %grep-string-type))))
 
 (def string-append (fn (_ . ss) (string-concat ss)))
 (def string-concat
