@@ -67,9 +67,13 @@
 (def file-read-all (fn (_ path) (File read-all path)))
 (def file-write
   (fn (_ fd s) (File write fd s (string-length s))))
+; n writable bytes for a raw read to fill.  A string made with a NUL fill is
+; not that: strings are C strings, so it is the empty string, a buffer of one
+; byte, and the platform refuses to make it.
+(def %str-make-raw (prim-ref (lit str) (lit make)))
 (def file-read-fd
   (fn (_ fd n)
-    (def buf (make-string n (integer->char 0)))
+    (def buf (%str-make-raw n))
     (def r (File read fd buf n))
     (if (if (number? r) (> r 0) #f) (substring buf 0 r) "")))
 (def file-exists? (fn (_ path) (File exists? path)))
