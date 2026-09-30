@@ -63,7 +63,7 @@
 (def regex-search (fn (_ s rx) (Regex search s rx)))
 (def regex-match (fn (_ s rx) (Regex match s rx)))
 
-; File read/write are the raw syscall shapes -- see x-awk/awk/prims.x.
+; File read/write are the raw syscall patterns -- see x-awk/awk/prims.x.
 (def file-read-all (fn (_ path) (File read-all path)))
 (def file-write
   (fn (_ fd s) (File write fd s (string-length s))))

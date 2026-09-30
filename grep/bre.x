@@ -7,7 +7,7 @@
 ; @license MIT No Attribution (MIT-0)
 ;
 ; POSIX grep speaks BRE by default, where ( ) { } + ? | are literal and \( \)
-; \{ \} are the operators; lib/x/type/regex.x speaks an ERE-shaped dialect. So
+; \{ \} are the operators; lib/x/type/regex.x speaks an ERE-like dialect. So
 ; BRE translates by swapping the escapes: bare grouping characters gain a
 ; backslash, the backslashed operators lose theirs. -E passes through.
 ; Case-insensitivity is compiled into the pattern -- a literal letter becomes
@@ -159,21 +159,21 @@
                 acc))))))
     (go 0 ())))
 
-; One pattern to a matcher: (KIND DATA), where KIND is rx (search),
+; One pattern to a matcher: (LABEL DATA), where LABEL is rx (search),
 ; rx-full (-x), fix (substring), or fix-x (equality); fixed DATA is
 ; pre-lowered under -i and the line lowers at match time.
 (def %grep-compile-one
-  (fn (_ pat mode ci word xline)
-    (if (eq? mode (lit fixed))
+  (fn (_ pat label ci word xline)
+    (if (eq? label (lit fixed))
       (list (if xline (lit fix-x) (lit fix))
         (if ci (%grep-lower pat) pat))
-      (let ((xl (%grep-xlate pat (eq? mode (lit bre)) ci)))
+      (let ((xl (%grep-xlate pat (eq? label (lit bre)) ci)))
         (def wrapped
           (if word (string-append "\\b(" xl ")\\b") xl))
         (list (if xline (lit rx-full) (lit rx))
           (regex-compile wrapped))))))
 
-; substring search, bytes (the x-awk shape)
+; substring search, bytes (the x-awk pattern)
 (def %grep-find?
   (fn (_ s t)
     (def ls (byte-len s))
@@ -194,12 +194,12 @@
 ; lowered line.
 (def %grep-hit?
   (fn (_ m line lline)
-    (let ((kind (first m)))
-      (if (eq? kind (lit rx))
+    (let ((label (first m)))
+      (if (eq? label (lit rx))
         (not (null? (regex-search line (first (rest m)))))
-        (if (eq? kind (lit rx-full))
+        (if (eq? label (lit rx-full))
           (regex-match line (first (rest m)))
-          (if (eq? kind (lit fix))
+          (if (eq? label (lit fix))
             (%grep-find? (if (null? lline) line lline) (first (rest m)))
             (string=? (if (null? lline) line lline) (first (rest m)))))))))
 

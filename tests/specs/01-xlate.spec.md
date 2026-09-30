@@ -1,6 +1,6 @@
 # @weight 1
 
-The BRE translator: POSIX BRE text to the engine's ERE-shaped dialect.
+The BRE translator: POSIX BRE text to the engine's ERE-like dialect.
 Bare ( ) { } + ? | are BRE literals and gain escapes; backslashed
 \( \) \{ \} are the operators and lose theirs.  Back-references and
 [:named:] classes refuse loudly.

@@ -88,7 +88,7 @@
                 (list flags (reverse pats) ops)
                 (self (rest ops) flags (pair op pats) #t)))))))
     ; -- handling above is clumsy for the pattern-after--- case; keep
-    ; the common shapes correct: [opts] [pat] [files], -- ends opts.
+    ; the common patterns correct: [opts] [pat] [files], -- ends opts.
     (go operands () () #f)))
 
 ; a -f file: one pattern per line
@@ -100,7 +100,7 @@
         (string-append "grep: can't open pattern file " path) ()))))
 
 ; input to lines: split on newline, a trailing newline closing the last
-; line rather than opening an empty one (bytes, the x-awk shape)
+; line rather than opening an empty one (bytes, the x-awk pattern)
 (def %grep-lines-go
   (fn (self s end i start acc)
     (if (>= i end)
@@ -144,7 +144,7 @@
     (def names (%grep-has? (lit names) flags))
     (def count (%grep-has? (lit count) flags))
     (def lineno (%grep-has? (lit lineno) flags))
-    (def label (if (null? name) "(standard input)" name))
+    (def shown-name (if (null? name) "(standard input)" name))
     (def prefix (if prefix? (string-append name ":") ""))
     (def go
       (fn (self ls n hits)
@@ -163,7 +163,7 @@
               (if quiet
                 (pair #t #t)
                 (if names
-                  (do (display (string-append label "\n"))
+                  (do (display (string-append shown-name "\n"))
                       (pair #t #f))
                   ; fallthrough continues below
                   (do (if count ()
@@ -187,12 +187,12 @@
     (if (null? pats)
       (do (file-write 2 "usage: grep [-EFcilnqsvwx] [-e pat]... [-f file]... [pat] [file]...\n")
           2)
-      (let ((mode (if (%grep-has? (lit ere) flags) (lit ere)
+      (let ((label (if (%grep-has? (lit ere) flags) (lit ere)
                     (if (%grep-has? (lit fixed) flags) (lit fixed)
                       (lit bre)))))
         (def matchers
           (map (fn (_ p)
-                 (%grep-compile-one p mode
+                 (%grep-compile-one p label
                    (%grep-has? (lit ci) flags)
                    (%grep-has? (lit word) flags)
                    (%grep-has? (lit xline) flags)))
