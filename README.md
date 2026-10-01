@@ -6,7 +6,7 @@ POSIX grep on x-lang, the second tool of the self-hosting arc (x-awk is
 the first; x-lang's `docs/bootstrap-closure.md` measured grep as the
 build's single most-invoked external, 4,186 calls).  BRE by default
 with the escape-swap translated onto `lib/x/type/regex.x`, `-E` for the
-engine's native ERE-shaped dialect, `-F` for fixed strings.
+engine's native ERE-like dialect, `-F` for fixed strings.
 
 Status: pre-release.  Working: `-E -F -c -i -l -n -q -s -v -w -x`,
 `-e`/`-f` pattern collection, bundled short flags, `--`, files with the
