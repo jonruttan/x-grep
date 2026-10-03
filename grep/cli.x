@@ -7,6 +7,7 @@
 ; @license MIT No Attribution (MIT-0)
 ;
 ;   x -l grep -- [-EFcilnqsvwx] [-e pat]... [-f patfile]... [pat] [file]...
+;   x -l grep -- --help
 ;
 ; The `--` lets grep's own short options through x.sh's parsing (which
 ; would otherwise claim -e, -f, -F, -l, -q and -v for itself); without
@@ -47,14 +48,15 @@
 (def grep-main
   (fn (_ raw-args)
     (def argv (grep-argv raw-args))
-    ; read stdin only when something will consume it: no file operands,
-    ; or a "-" among them
-    (def plan (grep-parse-cli argv))
-    (def files (first (rest (rest plan))))
+    ; read stdin only when something will consume it: a line that runs,
+    ; with no file operands or a "-" among them
+    (def plan (if (Opts help? %grep-options argv) () (grep-parse-cli argv)))
+    (def files (if (null? plan) () (first (rest (rest plan)))))
     (def wants-stdin?
-      (if (null? files) #t
+      (if (null? plan) #f
+        (if (null? files) #t
         (let ((go (fn (self fs)
                     (if (null? fs) #f
                       (if (string=? (first fs) "-") #t (self (rest fs)))))))
-          (go files))))
+          (go files)))))
     (sys-exit (grep-run argv (if wants-stdin? (%grep-stdin!) "")))))

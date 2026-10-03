@@ -14,6 +14,7 @@
 
 (import x/type/regex)
 (import x/sys/file)
+(import x/sys/opts)
 
 (provide grep/prims
   char->integer integer->char byte-at byte-len
