@@ -13,83 +13,99 @@
 ; turns the name: prefix on, POSIX's rule.
 
 ; --- Option parsing (pure) ---------------------------------------------------
-; Answers ((flags) (patterns) (files)); flags is a symbol list.  -e and
-; -f collect patterns (joined or split spellings); bundled short flags
-; (-inv) unbundle; -- ends options; the first operand is the pattern
-; only when -e/-f gave none.
+; The options, declared once: what the parse accepts, what --help prints and
+; what a refusal prints.  busybox's grep help text, less the rows for the
+; options this grep does not take (-H -h -L -o -r -R -m -A -B -C).
+(def %grep-options
+  (Opts declare "grep"
+    "[-HhnlLoqvsrRiwFE] [-m N] [-A|B|C N] { PATTERN | -e PATTERN... | -f FILE... } [FILE]..."
+    "Search for PATTERN in FILEs (or stdin)"
+    (list
+      (Opts flag "-n" "Add 'line_no:' prefix")
+      (Opts flag "-l" "Show only names of files that match")
+      (Opts flag "-c" "Show only count of matching lines")
+      (Opts flag "-q" "Quiet. Return 0 if PATTERN is found, 1 otherwise")
+      (Opts flag "-s" "Suppress open and read errors")
+      (Opts flag "-v" "Select non-matching lines")
+      (Opts flag "-i" "Ignore case")
+      (Opts flag "-w" "Match whole words only")
+      (Opts flag "-x" "Match whole lines only")
+      (Opts flag "-F" "PATTERN is a literal (not regexp)")
+      (Opts flag "-E" "PATTERN is an extended regexp")
+      (Opts arg "-e" "PTRN" "Pattern to match")
+      (Opts arg "-f" "FILE" "Read pattern from file"))))
 
+; each flag's name in the run
 (def %grep-flag-syms
-  (list (pair 69 (lit ere)) (pair 70 (lit fixed))          ; E F
-    (pair 99 (lit count)) (pair 105 (lit ci))              ; c i
-    (pair 108 (lit names)) (pair 110 (lit lineno))         ; l n
-    (pair 113 (lit quiet)) (pair 115 (lit silent))         ; q s
-    (pair 118 (lit invert)) (pair 119 (lit word))          ; v w
-    (pair 120 (lit xline))))                               ; x
+  (list (pair "-E" (lit ere)) (pair "-F" (lit fixed))
+    (pair "-c" (lit count)) (pair "-i" (lit ci))
+    (pair "-l" (lit names)) (pair "-n" (lit lineno))
+    (pair "-q" (lit quiet)) (pair "-s" (lit silent))
+    (pair "-v" (lit invert)) (pair "-w" (lit word))
+    (pair "-x" (lit xline))))
 
-(def %grep-flag-sym
-  (fn (_ b)
+; Answers ((flags) (patterns) (files)), flags a symbol list, or nil when the
+; line does not run: an option grep does not take, or no pattern.  Options
+; stop at the first operand, as musl's getopt stops; -e and -f gather
+; patterns, and without them the first operand is the pattern.
+(def grep-parse-cli
+  (fn (_ argv)
+    (def o (Opts parse-leading %grep-options argv))
+    (def ops (Opts operands o))
+    (def from-files
+      (fn (self fs)
+        (if (null? fs) () (append (%grep-pat-lines (first fs)) (self (rest fs))))))
+    (def pats (append (Opts values o "-e") (from-files (Opts values o "-f"))))
+    (match
+      ((not (null? (Opts unknown o))) ())
+      ((not (null? pats))
+        (list (%grep-flags o) pats ops))
+      ((null? ops) ())
+      (#t (list (%grep-flags o) (list (first ops)) (rest ops))))))
+
+(def %grep-flags
+  (fn (_ o)
     (def go
       (fn (self es)
-        (if (null? es) ()
-          (if (= (first (first es)) b)
-            (rest (first es))
-            (self (rest es))))))
+        (match
+          ((null? es) ())
+          ((Opts on? o (first (first es))) (pair (rest (first es)) (self (rest es))))
+          (#t (self (rest es))))))
     (go %grep-flag-syms)))
 
-; one -X arg: value from the joined or the split spelling
-(def %grep-optarg
-  (fn (_ op ops)
-    (if (> (byte-len op) 2)
-      (pair (substring op 2 (byte-len op)) (rest ops))
-      (if (null? (rest ops))
-        (Err raise (lit grep)
-          (string-append "grep: option needs an argument: " op) ())
-        (pair (first (rest ops)) (rest (rest ops)))))))
+; The line refused, as busybox's grep refuses it: musl getopt's line naming the
+; option, or nothing when there was no pattern, then the usage text, on
+; standard error, and 2.
+(def %grep-refuse
+  (fn (_ tok)
+    (do (unless (null? tok)
+          (file-write 2 (string-concat (list "grep: " (%grep-refusal tok) "\n"))))
+        (file-write 2 (Opts usage %grep-options))
+        2)))
 
-(def grep-parse-cli
-  (fn (_ operands)
-    (def unbundle
-      (fn (self op i flags)
-        (if (>= i (byte-len op)) flags
-          (let ((sym (%grep-flag-sym (byte-at op i))))
-            (if (null? sym)
-              (Err raise (lit grep)
-                (string-append "grep: unknown option: " op) ())
-              (self op (+ i 1) (pair sym flags)))))))
+; What is wrong with TOK, in musl getopt's words: in a short cluster, read left
+; to right, the first letter grep does not take is unrecognized, and -e or -f
+; with nothing after it requires an argument; a long option is named without
+; its dashes.
+(def %grep-refusal
+  (fn (_ tok)
+    (def end (byte-len tok))
     (def go
-      (fn (self ops flags pats saw-pat?)
-        (if (null? ops)
-          (list flags (reverse pats) ())
-          (let ((op (first ops)))
-            (if (if (>= (byte-len op) 2) (= (byte-at op 0) 45) #f)  ; -X
-              (let ((b1 (byte-at op 1)))
-                (if (= b1 45)                                       ; --
-                  ; options end; when nothing named a pattern yet, the
-                  ; next operand is it
-                  (let ((tail (rest ops)))
-                    (if (if saw-pat? #t (not (null? pats)))
-                      (list flags (reverse pats) tail)
-                      (if (null? tail)
-                        (Err raise (lit grep) "grep: no pattern" ())
-                        (list flags (list (first tail)) (rest tail)))))
-                  (if (= b1 101)                                    ; e
-                    (let ((r (%grep-optarg op ops)))
-                      (self (rest r) flags (pair (first r) pats) #t))
-                    (if (= b1 102)                                  ; f
-                      (let ((r (%grep-optarg op ops)))
-                        (self (rest r) flags
-                          (append (reverse (%grep-pat-lines (first r)))
-                            pats)
-                          #t))
-                      (self (rest ops) (unbundle op 1 flags)
-                        pats saw-pat?)))))
-              ; first non-option: the pattern, unless -e/-f already spoke
-              (if (if saw-pat? #t (not (null? pats)))
-                (list flags (reverse pats) ops)
-                (self (rest ops) flags (pair op pats) #t)))))))
-    ; -- handling above is clumsy for the pattern-after--- case; keep
-    ; the common patterns correct: [opts] [pat] [files], -- ends opts.
-    (go operands () () #f)))
+      (fn (self i)
+        (let ((opt (string-append "-" (substring tok i (+ i 1)))))
+          (match
+            ((>= i end) (string-append "unrecognized option: " (substring tok 1 end)))
+            ((%grep-member? opt (Opts valued %grep-options))
+              (string-append "option requires an argument: " (substring tok i (+ i 1))))
+            ((%grep-member? opt (Opts flags %grep-options)) (self (+ i 1)))
+            (#t (string-append "unrecognized option: " (substring tok i (+ i 1))))))))
+    (if (if (> end 2) (= (byte-at tok 1) #\-) #f)
+      (string-append "unrecognized option: " (substring tok 2 end))
+      (go 1))))
+
+(def %grep-member?
+  (fn (self s l)
+    (if (null? l) #f (if (string=? (first l) s) #t (self s (rest l))))))
 
 ; a -f file: one pattern per line
 (def %grep-pat-lines
@@ -180,13 +196,16 @@
 ; the whole run; INPUT is stdin's text
 (def grep-run
   (fn (_ argv input)
-    (def plan (grep-parse-cli argv))
-    (def flags (first plan))
-    (def pats (first (rest plan)))
-    (def files (first (rest (rest plan))))
-    (if (null? pats)
-      (do (file-write 2 "usage: grep [-EFcilnqsvwx] [-e pat]... [-f file]... [pat] [file]...\n")
-          2)
+    (def plan (if (Opts help? %grep-options argv) () (grep-parse-cli argv)))
+    (def flags (if (null? plan) () (first plan)))
+    (def pats (if (null? plan) () (first (rest plan))))
+    (def files (if (null? plan) () (first (rest (rest plan)))))
+    (match
+      ((Opts help? %grep-options argv)
+        (do (file-write 1 (Opts usage %grep-options)) 0))
+      ((null? plan)
+        (%grep-refuse (Opts unknown (Opts parse-leading %grep-options argv))))
+      (#t
       (let ((label (if (%grep-has? (lit ere) flags) (lit ere)
                     (if (%grep-has? (lit fixed) flags) (lit fixed)
                       (lit bre)))))
@@ -221,4 +240,4 @@
           (let ((r (%grep-scan-file matchers flags () #f
                      (%grep-lines input))))
             (if (first r) 0 1))
-          (scan files #f #f))))))
+          (scan files #f #f)))))))
