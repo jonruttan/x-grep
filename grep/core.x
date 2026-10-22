@@ -16,7 +16,13 @@
 ; The options, declared once: what the parse accepts, what --help prints and
 ; what a refusal prints.  busybox's grep help text, less the rows for the
 ; options this grep does not take (-H -h -L -o -r -R -m -A -B -C).
-(def %grep-options
+(module grep/core)
+(import grep/prims integer->char byte-at byte-len substring string=?
+  list->string string-append string-concat reverse append map
+  file-read-all file-write file-exists?)
+(import grep/bre grep-compile-one grep-lower grep-any-hit?)
+
+(def grep-options
   (Opts declare "grep"
     "[-HhnlLoqvsrRiwFE] [-m N] [-A|B|C N] { PATTERN | -e PATTERN... | -f FILE... } [FILE]..."
     "Search for PATTERN in FILEs (or stdin)"
@@ -50,7 +56,7 @@
 ; patterns, and without them the first operand is the pattern.
 (def grep-parse-cli
   (fn (_ argv)
-    (def o (Opts parse-leading %grep-options argv))
+    (def o (Opts parse-leading grep-options argv))
     (def ops (Opts operands o))
     (def from-files
       (fn (self fs)
@@ -80,7 +86,7 @@
   (fn (_ tok)
     (do (unless (null? tok)
           (file-write 2 (string-concat (list "grep: " (%grep-refusal tok) "\n"))))
-        (file-write 2 (Opts usage %grep-options))
+        (file-write 2 (Opts usage grep-options))
         2)))
 
 ; What is wrong with TOK, in musl getopt's words: in a short cluster, read left
@@ -95,9 +101,9 @@
         (let ((opt (string-append "-" (substring tok i (+ i 1)))))
           (match
             ((>= i end) (string-append "unrecognized option: " (substring tok 1 end)))
-            ((%grep-member? opt (Opts valued %grep-options))
+            ((%grep-member? opt (Opts valued grep-options))
               (string-append "option requires an argument: " (substring tok i (+ i 1))))
-            ((%grep-member? opt (Opts flags %grep-options)) (self (+ i 1)))
+            ((%grep-member? opt (Opts flags grep-options)) (self (+ i 1)))
             (#t (string-append "unrecognized option: " (substring tok i (+ i 1))))))))
     (if (if (> end 2) (= (byte-at tok 1) #\-) #f)
       (string-append "unrecognized option: " (substring tok 2 end))
@@ -111,7 +117,7 @@
 (def %grep-pat-lines
   (fn (_ path)
     (if (file-exists? path)
-      (%grep-lines (file-read-all path))
+      (grep-lines (file-read-all path))
       (Err raise (lit grep)
         (string-append "grep: can't open pattern file " path) ()))))
 
@@ -126,15 +132,17 @@
       (if (= (byte-at s i) 10)
         (self s end (+ i 1) (+ i 1) (pair (substring s start i) acc))
         (self s end (+ i 1) start acc)))))
-(def %grep-lines
+(def grep-lines
   (fn (_ s) (%grep-lines-go s (byte-len s) 0 0 ())))
 
 (def %grep-has?
   (fn (_ sym flags)
     (def go
       (fn (self fs)
-        (if (null? fs) #f
-          (if (eq? (first fs) sym) #t (self (rest fs))))))
+        (match
+          ((null? fs) #f)
+          ((eq? (first fs) sym) #t)
+          (#t (self (rest fs))))))
     (go flags)))
 
 (def %grep-int->str
@@ -171,47 +179,46 @@
                 ())
               (pair (> hits 0) #f))
           (let ((line (first ls)))
-            (def lline (if ci (%grep-lower line) ()))
-            (def hit (%grep-any-hit? matchers line lline))
+            (def lline (if ci (grep-lower line) ()))
+            (def hit (grep-any-hit? matchers line lline))
             (def sel (if invert (not hit) hit))
-            (if (not sel)
-              (self (rest ls) (+ n 1) hits)
-              (if quiet
-                (pair #t #t)
-                (if names
-                  (do (display (string-append shown-name "\n"))
-                      (pair #t #f))
-                  ; fallthrough continues below
-                  (do (if count ()
-                        (display
-                          (string-append prefix
-                            (string-append
-                              (if lineno
-                                (string-append (%grep-int->str n) ":")
-                                "")
-                              (string-append line "\n")))))
-                      (self (rest ls) (+ n 1) (+ hits 1))))))))))
+            (match
+              ((not sel) (self (rest ls) (+ n 1) hits))
+              (quiet (pair #t #t))
+              (names
+                (do (display (string-append shown-name "\n"))
+                    (pair #t #f)))
+              (#t
+                (do (if count ()
+                      (display
+                        (string-append prefix
+                          (string-append
+                            (if lineno
+                              (string-append (%grep-int->str n) ":")
+                              "")
+                            (string-append line "\n")))))
+                    (self (rest ls) (+ n 1) (+ hits 1)))))))))
     (go lines 1 0)))
 
 ; the whole run; INPUT is stdin's text
 (def grep-run
   (fn (_ argv input)
-    (def plan (if (Opts help? %grep-options argv) () (grep-parse-cli argv)))
+    (def plan (if (Opts help? grep-options argv) () (grep-parse-cli argv)))
     (def flags (if (null? plan) () (first plan)))
     (def pats (if (null? plan) () (first (rest plan))))
     (def files (if (null? plan) () (first (rest (rest plan)))))
     (match
-      ((Opts help? %grep-options argv)
-        (do (file-write 1 (Opts usage %grep-options)) 0))
+      ((Opts help? grep-options argv)
+        (do (file-write 1 (Opts usage grep-options)) 0))
       ((null? plan)
-        (%grep-refuse (Opts unknown (Opts parse-leading %grep-options argv))))
+        (%grep-refuse (Opts unknown (Opts parse-leading grep-options argv))))
       (#t
       (let ((label (if (%grep-has? (lit ere) flags) (lit ere)
                     (if (%grep-has? (lit fixed) flags) (lit fixed)
                       (lit bre)))))
         (def matchers
           (map (fn (_ p)
-                 (%grep-compile-one p label
+                 (grep-compile-one p label
                    (%grep-has? (lit ci) flags)
                    (%grep-has? (lit word) flags)
                    (%grep-has? (lit xline) flags)))
@@ -231,13 +238,15 @@
                   (let ((text (if (string=? f "-") input
                                 (file-read-all f))))
                     (def r (%grep-scan-file matchers flags
-                             f many? (%grep-lines text)))
+                             f many? (grep-lines text)))
                     (if (rest r)
                       (if err? 2 0)   ; early quit: quiet hit
                       (self (rest fs)
                         (if (first r) #t matched?) err?))))))))
         (if (null? files)
           (let ((r (%grep-scan-file matchers flags () #f
-                     (%grep-lines input))))
+                     (grep-lines input))))
             (if (first r) 0 1))
           (scan files #f #f)))))))
+
+(provide grep/core grep-run grep-parse-cli grep-options grep-lines)

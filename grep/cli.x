@@ -14,11 +14,18 @@
 ; it, place options after the pattern.  The engine-flag stripping and
 ; the fd-3 stdin reclaim are x-awk's, unchanged.
 
+(module grep/cli)
+(import grep/prims byte-len string=? string-concat reverse filter file-read-fd
+  sys-exit sys-dup2 sys-close)
+(import grep/core grep-options grep-parse-cli grep-run)
+
 (def %grep-cli-engine-flag?
   (fn (_ s)
-    (if (string=? s "--quiet") #t
-      (if (string=? s "--batch") #t
-        (if (string=? s "--no-color") #t (string=? s "--verbose"))))))
+    (match
+      ((string=? s "--quiet") #t)
+      ((string=? s "--batch") #t)
+      ((string=? s "--no-color") #t)
+      (#t (string=? s "--verbose")))))
 
 (def grep-argv
   (fn (_ raw)
@@ -32,7 +39,7 @@
 ; stdin, read once from the caller's fd (waiting on fd 3 -- the
 ; platform's arrangement; see x-awk).  4096-byte chunks until the
 ; bundle's minimum x-lang tree carries the Str8 make fix.
-(def %grep-stdin!
+(def grep-stdin!
   (fn (_)
     (sys-dup2 3 0)
     (sys-close 3)
@@ -50,7 +57,7 @@
     (def argv (grep-argv raw-args))
     ; read stdin only when something will consume it: a line that runs,
     ; with no file operands or a "-" among them
-    (def plan (if (Opts help? %grep-options argv) () (grep-parse-cli argv)))
+    (def plan (if (Opts help? grep-options argv) () (grep-parse-cli argv)))
     (def files (if (null? plan) () (first (rest (rest plan)))))
     (def wants-stdin?
       (if (null? plan) #f
@@ -59,4 +66,6 @@
                     (if (null? fs) #f
                       (if (string=? (first fs) "-") #t (self (rest fs)))))))
           (go files)))))
-    (sys-exit (grep-run argv (if wants-stdin? (%grep-stdin!) "")))))
+    (sys-exit (grep-run argv (if wants-stdin? (grep-stdin!) "")))))
+
+(provide grep/cli grep-argv grep-main grep-stdin!)
