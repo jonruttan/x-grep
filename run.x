@@ -17,12 +17,12 @@
 ; own status (0 match, 1 none, 2 trouble), so the launcher never starts a REPL
 ; under a batch run. With no operands it is the x REPL with the core loaded:
 ; (grep-run ARGV INPUT) at a prompt.
-(import grep/base)
+(import grep/base grep-version grep-repl-print grep-argv grep-main)
 
 (set! %lang-name "GREP")
 (set! %lang-version grep-version)
 (set! %repl-prompt "grep> ")
-(set! %repl-print %grep-repl-print)
+(set! %repl-print grep-repl-print)
 
 (unless (null? (grep-argv args))
   (grep-main args))

@@ -10,20 +10,23 @@
 ; spec harness stands in for run.x under the suite.  Nothing under
 ; grep/ includes a platform module (x-lang#515).
 
-(import grep/prims)
 
-(provide grep/base grep-version grep-xlate-bre grep-run
-  grep-argv grep-parse-cli grep-main %grep-repl-print)
+
+(module grep/base)
+(import grep/bre grep-xlate-bre)
+(import grep/core grep-run grep-parse-cli)
+(import grep/cli grep-argv grep-main)
 
 (def grep-version "0.1.0")
 
 ; The default printer, quiet about nil -- the result of a grep run is
 ; its status, which belongs in $?, not on stdout.
-(def %grep-repl-print
+(def grep-repl-print
   (fn (_ result)
     (unless (null? result) (write result))
     (newline)))
 
-(include-once "./bre.x")
-(include-once "./core.x")
-(include-once "./cli.x")
+; The tool's surface, assembled: the version and the printer are this
+; module's, the rest re-exported from the modules that define them.
+(provide grep/base grep-version grep-repl-print grep-xlate-bre grep-run
+  grep-parse-cli grep-argv grep-main)

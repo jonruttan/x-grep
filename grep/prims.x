@@ -12,19 +12,11 @@
 ; (Str8 class dispatch measured ~0.4ms PER CHARACTER in x-awk's pass),
 ; and no defs at depth in anything hot.
 
+(module grep/prims)
 (import x/type/regex)
 (import x/sys/file)
 (import x/sys/opts)
 
-(provide grep/prims
-  char->integer integer->char byte-at byte-len
-  string-length string-ref substring string-append string-concat
-  string=? make-string list->string
-  length reverse append map filter set-first!
-  regex-compile regex-search regex-match
-  file-read-all file-read-fd file-write file-exists?
-  file-open-write file-close file-unlink
-  sys-exit sys-dup2 sys-close)
 
 (def char->integer (prim-ref (lit char) (lit ->int)))
 (def integer->char (prim-ref (lit int) (lit ->char)))
@@ -86,3 +78,13 @@
 (def sys-exit (fn (_ n) (Sys exit n)))
 (def sys-dup2 (fn (_ a b) (Sys dup2 a b)))
 (def sys-close (fn (_ fd) (Sys close fd)))
+
+(provide grep/prims
+  char->integer integer->char byte-at byte-len
+  string-length string-ref substring string-append string-concat
+  string=? make-string list->string
+  length reverse append map filter set-first!
+  regex-compile regex-search regex-match
+  file-read-all file-read-fd file-write file-exists?
+  file-open-write file-close file-unlink
+  sys-exit sys-dup2 sys-close)

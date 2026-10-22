@@ -42,6 +42,7 @@ cat > "$OUT" <<EOF
 (def %install-root "$X_ROOT")
 (include "$X_BASE")
 (import-path! "$BUNDLE")
-(import grep/base)
-(set! %repl-print %grep-repl-print)
+(import grep/base grep-run grep-xlate-bre grep-repl-print)
+(import grep/prims file-close file-open-write file-read-all file-read-fd file-unlink file-write string-length sys-dup2)
+(set! %repl-print grep-repl-print)
 EOF
