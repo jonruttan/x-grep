@@ -15,7 +15,7 @@
 (module grep/base)
 (import grep/bre grep-xlate-bre)
 (import grep/core grep-run grep-parse-cli)
-(import grep/cli grep-argv grep-main)
+(import grep/cli grep-main)
 
 (def grep-version "0.1.0")
 
@@ -29,4 +29,4 @@
 ; The tool's surface, assembled: the version and the printer are this
 ; module's, the rest re-exported from the modules that define them.
 (provide grep/base grep-version grep-repl-print grep-xlate-bre grep-run
-  grep-parse-cli grep-argv grep-main)
+  grep-parse-cli grep-main)

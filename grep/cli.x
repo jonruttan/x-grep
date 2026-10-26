@@ -11,30 +11,14 @@
 ;
 ; The `--` lets grep's own short options through x.sh's parsing (which
 ; would otherwise claim -e, -f, -F, -l, -q and -v for itself); without
-; it, place options after the pattern.  The engine-flag stripping and
-; the fd-3 stdin reclaim are x-awk's, unchanged.
+; it, place options after the pattern.  The fd-3 stdin reclaim is
+; x-awk's, unchanged.  The operands are (Sys args 'program) past the
+; engine's path, which run.x hands grep-main.
 
 (module grep/cli)
-(import grep/prims byte-len string=? string-concat reverse filter file-read-fd
+(import grep/prims byte-len string=? string-concat reverse file-read-fd
   sys-exit sys-dup2 sys-close)
 (import grep/core grep-options grep-parse-cli grep-run)
-
-(def %grep-cli-engine-flag?
-  (fn (_ s)
-    (match
-      ((string=? s "--quiet") #t)
-      ((string=? s "--batch") #t)
-      ((string=? s "--no-color") #t)
-      (#t (string=? s "--verbose")))))
-
-(def grep-argv
-  (fn (_ raw)
-    (def ops
-      (filter (fn (_ a) (not (%grep-cli-engine-flag? a)))
-        (if (pair? raw) (rest raw) ())))
-    (if (if (pair? ops) (string=? (first ops) "--") #f)
-      (rest ops)
-      ops)))
 
 ; stdin, read once from the caller's fd (waiting on fd 3 -- the
 ; platform's arrangement; see x-awk).  4096-byte chunks until the
@@ -53,8 +37,7 @@
 
 ; Run the command line and DO NOT RETURN.
 (def grep-main
-  (fn (_ raw-args)
-    (def argv (grep-argv raw-args))
+  (fn (_ argv)
     ; read stdin only when something will consume it: a line that runs,
     ; with no file operands or a "-" among them
     (def plan (if (Opts help? grep-options argv) () (grep-parse-cli argv)))
@@ -68,4 +51,4 @@
           (go files)))))
     (sys-exit (grep-run argv (if wants-stdin? (grep-stdin!) "")))))
 
-(provide grep/cli grep-argv grep-main grep-stdin!)
+(provide grep/cli grep-main grep-stdin!)
