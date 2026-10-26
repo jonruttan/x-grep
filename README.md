@@ -46,7 +46,7 @@ every expectation taken from a real grep run.
     grep/prims.x      the platform layer (byte doors and File, one file)
     grep/bre.x        BRE/-i/-w compiled into engine patterns; matchers
     grep/core.x       options, the line loop, the status
-    grep/cli.x        argv stripping, stdin reclaim, grep-main (the exit)
+    grep/cli.x        stdin reclaim, grep-main (the exit)
     tests/            markdown specs + the platform's runner, vendored nowhere
 
 <p align="center"><img src="docs/bitwise-mark.svg" alt="Bitwise" width="96"></p>
