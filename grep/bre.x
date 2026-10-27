@@ -7,9 +7,10 @@
 ; @license MIT No Attribution (MIT-0)
 ;
 ; POSIX grep speaks BRE by default, where ( ) { } + ? | are literal and \( \)
-; \{ \} are the operators; lib/x/type/regex.x speaks an ERE-like dialect. So
-; BRE translates by swapping the escapes: bare grouping characters gain a
-; backslash, the backslashed operators lose theirs. -E passes through.
+; \{ \} \| \+ \? are the operators (the last three the extension GNU, BSD
+; and busybox grep share); lib/x/type/regex.x speaks an ERE-like dialect.
+; So BRE translates by swapping the escapes: bare operator characters gain
+; a backslash, the backslashed operators lose theirs. -E passes through.
 ; Case-insensitivity is compiled into the pattern -- a literal letter becomes
 ; its two-case class, a class entry gains its swapped twin -- so no engine flag
 ; is needed.  A [:named:] class expands inside its bracket to the bytes it
@@ -168,9 +169,10 @@
                       ((if bre?
                          (match ((= e 40) #t) ((= e 41) #t)
                                 ((= e 123) #t) ((= e 125) #t)
-                                (#t #f))
+                                ((= e 124) #t) ((= e 43) #t)
+                                ((= e 63) #t) (#t #f))
                          #f)
-                        ; BRE \( \) \{ \} are the OPERATORS: unescape
+                        ; BRE \( \) \{ \} \| \+ \? are the OPERATORS: unescape
                         (self (+ i 2) (pair (grep-b->s e) acc)))
                       ((if ci
                          (if (null? (%grep-swap e)) #f

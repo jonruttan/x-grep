@@ -5,8 +5,10 @@
 POSIX grep on x-lang, the second tool of the self-hosting arc (x-awk is
 the first; x-lang's `docs/bootstrap-closure.md` measured grep as the
 build's single most-invoked external, 4,186 calls).  BRE by default
-with the escape-swap translated onto `lib/x/type/regex.x`, `-E` for the
-engine's native ERE-like dialect, `-F` for fixed strings.
+with the escape-swap translated onto `lib/x/type/regex.x` -- `\( \)
+\{ \}` and the `\| \+ \?` that GNU, BSD and busybox grep all take as
+operators, the bare characters literal -- `-E` for the engine's native
+ERE-like dialect, `-F` for fixed strings.
 
 Status: pre-release.  Working: every option busybox 1.36.1's grep
 takes -- `-H -h -n -l -L -c -o -q -v -s -r -R -i -w -x -F -E`, `-m N`,

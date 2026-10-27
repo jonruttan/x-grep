@@ -2,8 +2,9 @@
 
 The BRE translator: POSIX BRE text to the engine's ERE-like dialect.
 Bare ( ) { } + ? | are BRE literals and gain escapes; backslashed
-\( \) \{ \} are the operators and lose theirs.  A [:named:] class expands
-to its bytes inside the bracket.  Back-references refuse loudly.
+\( \) \{ \} \| \+ \? are the operators and lose theirs.  A [:named:]
+class expands to its bytes inside the bracket.  Back-references refuse
+loudly.
 
 ## the escape swap
 
@@ -23,13 +24,41 @@ to its bytes inside the bracket.  Back-references refuse loudly.
 ---
     a(b){2}
 
-### ERE-only operators are BRE literals
+### bare + ? | are BRE literals
 
 ```grep
 (display (grep-xlate-bre "a+b?c|d"))
 ```
 ---
     a\+b\?c\|d
+
+### backslashed \| \+ \? are the operators
+
+```grep
+(display (grep-xlate-bre "a\\+b\\?c\\|d"))
+```
+---
+    a+b?c|d
+
+### a bare one stays literal beside its escaped twin
+
+```grep
+(do (display (grep-xlate-bre "a|b\\|b")) (newline) (display (grep-xlate-bre "a+\\+b")) (newline) (display (grep-xlate-bre "a?\\?b")))
+```
+---
+```output
+a\|b|b
+a\++b
+a\??b
+```
+
+### the operators apply to a group
+
+```grep
+(display (grep-xlate-bre "\\(a\\|b\\)\\+c"))
+```
+---
+    (a|b)+c
 
 ### classes pass through
 

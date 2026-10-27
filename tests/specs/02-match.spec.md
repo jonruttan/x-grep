@@ -146,6 +146,79 @@ aab
 0
 ```
 
+### BRE: \| alternates, bare | is literal
+
+```grep
+(do (display (grep-run (list "-o" "b\\|c") "abc\n")) (newline) (display (grep-run (list "a\\|b") "a|b\nab\n")) (newline) (display (grep-run (list "-o" "a|b\\|b") "a|b\nab\nb\n")) (newline) (display (grep-run (list "-o" "b\\|c") "b|c\n")))
+```
+---
+```output
+b
+c
+0
+a|b
+ab
+0
+a|b
+b
+b
+0
+b
+c
+0
+```
+
+### BRE: \+ repeats, bare + is literal
+
+```grep
+(do (display (grep-run (list "a\\+b") "ab\naab\nb\n")) (newline) (display (grep-run (list "-o" "a\\+b") "ab\naab\na+b\n")) (newline) (display (grep-run (list "-o" "a+\\+b") "a+b\naab\n")))
+```
+---
+```output
+ab
+aab
+0
+ab
+aab
+0
+a+b
+0
+```
+
+### BRE: \? makes optional, bare ? is literal
+
+```grep
+(do (display (grep-run (list "a\\?b") "ab\nb\na?b\n")) (newline) (display (grep-run (list "-o" "a?\\?b") "ab\nb\na?b\n")) (newline) (display (grep-run (list "-x" "a\\?b") "ab\nb\n")))
+```
+---
+```output
+ab
+b
+a?b
+0
+ab
+a?b
+0
+ab
+b
+0
+```
+
+### BRE: \+ and \| on a group
+
+```grep
+(do (display (grep-run (list "-o" "\\(ab\\)\\+") "abab\nab\n")) (newline) (display (grep-run (list "-o" "\\(a\\|b\\)c") "ac\nbc\ncc\n")))
+```
+---
+```output
+abab
+ab
+0
+ac
+bc
+0
+```
+
 ### -E: ERE operators live
 
 ```grep
