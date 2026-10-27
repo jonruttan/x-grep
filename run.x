@@ -10,7 +10,7 @@
 ; @license MIT No Attribution (MIT-0)
 ;
 ; Usage:
-;   x -l grep -- [-EFcilnqsvwx] [-e pat]... [-f patfile]... [pat] [file]...
+;   x -l grep -- [-HhnlLoqvsrRiwFE] [-m N] [-A|B|C N] [-e pat]... [-f patfile]... [pat] [file]...
 ;
 ; This file contains no path literals: x.sh boots the dialect, arms the bundle
 ; root, and cats this file. With operands, grep-main runs and exits with grep's

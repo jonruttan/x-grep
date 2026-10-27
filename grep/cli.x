@@ -6,7 +6,7 @@
 ; @copyright 2026 Jon Ruttan
 ; @license MIT No Attribution (MIT-0)
 ;
-;   x -l grep -- [-EFcilnqsvwx] [-e pat]... [-f patfile]... [pat] [file]...
+;   x -l grep -- [-HhnlLoqvsrRiwFE] [-m N] [-A|B|C N] [-e pat]... [-f patfile]... [pat] [file]...
 ;   x -l grep -- --help
 ;
 ; The `--` lets grep's own short options through x.sh's parsing (which
@@ -17,8 +17,8 @@
 
 (module grep/cli)
 (import grep/prims byte-len string=? string-concat reverse file-read-fd
-  sys-exit sys-dup2 sys-close)
-(import grep/core grep-options grep-parse-cli grep-run)
+  file-write sys-exit sys-dup2 sys-close)
+(import grep/core grep-options grep-parse-cli grep-plan-files grep-run)
 
 ; stdin, read once from the caller's fd (waiting on fd 3 -- the
 ; platform's arrangement; see x-awk).  4096-byte chunks until the
@@ -35,13 +35,23 @@
             (string-concat (reverse acc))))))
     (slurp ())))
 
+; A refusal grep-run raises -- a bad regex, a pattern file that will not
+; open -- is its own message on standard error and 2, as regcomp's
+; complaint leaves busybox's grep.  Anything else is not grep's to catch.
+(def %grep-run-cli
+  (fn (_ argv input)
+    (guard (e (if (eq? (Err label e) (lit grep))
+                (do (file-write 2 (string-concat (list (e msg) "\n"))) 2)
+                (error e)))
+      (grep-run argv input))))
+
 ; Run the command line and DO NOT RETURN.
 (def grep-main
   (fn (_ argv)
     ; read stdin only when something will consume it: a line that runs,
     ; with no file operands or a "-" among them
     (def plan (if (Opts help? grep-options argv) () (grep-parse-cli argv)))
-    (def files (if (null? plan) () (first (rest (rest plan)))))
+    (def files (grep-plan-files plan))
     (def wants-stdin?
       (if (null? plan) #f
         (if (null? files) #t
@@ -49,6 +59,6 @@
                     (if (null? fs) #f
                       (if (string=? (first fs) "-") #t (self (rest fs)))))))
           (go files)))))
-    (sys-exit (grep-run argv (if wants-stdin? (grep-stdin!) "")))))
+    (sys-exit (%grep-run-cli argv (if wants-stdin? (grep-stdin!) "")))))
 
 (provide grep/cli grep-main grep-stdin!)

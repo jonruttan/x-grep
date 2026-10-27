@@ -261,3 +261,113 @@ bb
 ```
 ---
     clean
+
+## named classes
+
+### [:digit:], [:space:] and [:blank:] in BRE and ERE
+
+```grep
+(do (display (grep-run (list "[[:digit:]]") "a1\nb\n")) (newline) (display (grep-run (list "-E" "[[:digit:]]+") "a1\nb\n")) (newline) (display (grep-run (list "a[[:space:]]b") "a b\nab\n")) (newline) (display (grep-run (list "[[:space:]]") "a\tb\n")) (newline) (display (grep-run (list "a[[:blank:]]b") "a b\na\tb\na\nb\n")))
+```
+---
+```output
+a1
+0
+a1
+0
+a b
+0
+a	b
+0
+a b
+a	b
+0
+```
+
+### a negated class, and two names in one bracket
+
+```grep
+(do (display (grep-run (list "[^[:space:]]") "a\n \n\t\n")) (newline) (display (grep-run (list "[[:alpha:][:digit:]]") "a\n1\n-\n")))
+```
+---
+```output
+a
+0
+a
+1
+0
+```
+
+### [:upper:] and [:lower:], and -i folding both
+
+```grep
+(do (display (grep-run (list "[[:upper:]]") "a\nA\n1\n")) (newline) (display (grep-run (list "[[:lower:]]") "a\nA\n1\n")) (newline) (display (grep-run (list "-i" "[[:upper:]]") "a\nA\n1\n")) (newline) (display (grep-run (list "-i" "[[:lower:]]") "a\nA\n1\n")))
+```
+---
+```output
+A
+0
+a
+0
+a
+A
+0
+a
+A
+0
+```
+
+### [:punct:], [:xdigit:], [:alnum:] with a literal beside it, and a - after a name
+
+```grep
+(do (display (grep-run (list "[[:punct:]]") "a\n!\n]\n-\n\\\n^\n \n")) (newline) (display (grep-run (list "[[:xdigit:]]") "f\ng\n9\nG\n")) (newline) (display (grep-run (list "[[:alnum:]_]") "a\n_\n-\n")) (newline) (display (grep-run (list "[[:alpha:]-]") "a-z\n")))
+```
+---
+```output
+!
+]
+-
+\
+^
+0
+f
+9
+0
+a
+_
+0
+a-z
+0
+```
+
+### -o with a class
+
+```grep
+(do (display (grep-run (list "-o" "[[:alpha:]]*") "ab12cd\n")) (newline) (display (grep-run (list "-oE" "[[:digit:]]+") "ab12cd\n")) (newline) (display (grep-run (list "-o" "[[:upper:]]") "aXb\n")) (newline) (display (grep-run (list "-oi" "[[:lower:]]") "aXb\n")))
+```
+---
+```output
+ab
+cd
+0
+12
+0
+X
+0
+a
+X
+b
+0
+```
+
+### -F sees no class; a name outside a bracket is itself
+
+```grep
+(do (display (grep-run (list "-F" "[[:alpha:]]") "a\n[[:alpha:]]\n")) (newline) (display (grep-run (list "a[[:alpha:]]b") "ab\n")))
+```
+---
+```output
+[[:alpha:]]
+0
+1
+```

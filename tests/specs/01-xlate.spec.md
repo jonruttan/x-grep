@@ -2,8 +2,8 @@
 
 The BRE translator: POSIX BRE text to the engine's ERE-like dialect.
 Bare ( ) { } + ? | are BRE literals and gain escapes; backslashed
-\( \) \{ \} are the operators and lose theirs.  Back-references and
-[:named:] classes refuse loudly.
+\( \) \{ \} are the operators and lose theirs.  A [:named:] class expands
+to its bytes inside the bracket.  Back-references refuse loudly.
 
 ## the escape swap
 
@@ -39,6 +39,21 @@ Bare ( ) { } + ? | are BRE literals and gain escapes; backslashed
 ---
     [a-c]x[^y]
 
+## named classes
+
+### a name expands to its bytes inside the bracket
+
+```grep
+(do (display (grep-xlate-bre "[[:digit:]]")) (newline) (display (grep-xlate-bre "[^[:alpha:]_]")) (newline) (display (grep-xlate-bre "[[:upper:][:xdigit:]]")) (newline) (display (grep-xlate-bre "[[:blank:]]")))
+```
+---
+```output
+[0-9]
+[^a-zA-Z_]
+[A-Z0-9A-Fa-f]
+[ 	]
+```
+
 ## the refusals
 
 ### back-references
@@ -49,10 +64,14 @@ Bare ( ) { } + ? | are BRE literals and gain escapes; backslashed
 ---
     Error: #<err:grep grep: back-references are not supported>
 
-### named classes
+### a class name regcomp does not know, and a bracket left open
 
 ```grep
-(grep-run (list "[[:digit:]]") "x\n")
+(do (display (guard (e (e msg)) (grep-run (list "[[:foo:]]") "a\n"))) (newline) (display (guard (e (e msg)) (grep-run (list "-E" "[[:]") "a:\n"))) (newline) (display (guard (e (e msg)) (grep-run (list "[[:digit:]") "a1\n"))))
 ```
 ---
-    Error: #<err:grep grep: [:named:] classes are not supported yet>
+```output
+grep: bad regex '[[:foo:]]': Unknown character class name
+grep: bad regex '[[:]': Unknown character class name
+grep: bad regex '[[:digit:]': Missing ']'
+```

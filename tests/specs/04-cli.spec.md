@@ -3,9 +3,8 @@
 The command line, as busybox's grep reads it: `--help` first prints the help
 text on stdout, and 0; an option grep does not take is refused in musl
 getopt's words, then the usage text, on stderr, and 2; no pattern at all is
-the usage text alone, and 2.  The text is busybox's, less the banner line and
-the rows for the options this grep does not take (-H -h -L -o -r -R -m -A -B
--C).  Options stop at the first operand, as musl's getopt stops.  A case
+the usage text alone, and 2.  The text is busybox's, less the banner line.
+Options stop at the first operand, as musl's getopt stops.  A case
 prints stdout, then `stderr:` and what grep wrote there, then the status.
 
 ## the fixture
@@ -35,17 +34,27 @@ Usage: grep [-HhnlLoqvsrRiwFE] [-m N] [-A|B|C N] { PATTERN | -e PATTERN... | -f 
 
 Search for PATTERN in FILEs (or stdin)
 
+	-H	Add 'filename:' prefix
+	-h	Do not add 'filename:' prefix
 	-n	Add 'line_no:' prefix
 	-l	Show only names of files that match
+	-L	Show only names of files that don't match
 	-c	Show only count of matching lines
+	-o	Show only the matching part of line
 	-q	Quiet. Return 0 if PATTERN is found, 1 otherwise
-	-s	Suppress open and read errors
 	-v	Select non-matching lines
+	-s	Suppress open and read errors
+	-r	Recurse
+	-R	Recurse and dereference symlinks
 	-i	Ignore case
 	-w	Match whole words only
 	-x	Match whole lines only
 	-F	PATTERN is a literal (not regexp)
 	-E	PATTERN is an extended regexp
+	-m N	Match up to N times per file
+	-A N	Print N lines of trailing context
+	-B N	Print N lines of leading context
+	-C N	Same as '-A N -B N'
 	-e PTRN	Pattern to match
 	-f FILE	Read pattern from file
 stderr:
@@ -67,17 +76,27 @@ Usage: grep [-HhnlLoqvsrRiwFE] [-m N] [-A|B|C N] { PATTERN | -e PATTERN... | -f 
 
 Search for PATTERN in FILEs (or stdin)
 
+	-H	Add 'filename:' prefix
+	-h	Do not add 'filename:' prefix
 	-n	Add 'line_no:' prefix
 	-l	Show only names of files that match
+	-L	Show only names of files that don't match
 	-c	Show only count of matching lines
+	-o	Show only the matching part of line
 	-q	Quiet. Return 0 if PATTERN is found, 1 otherwise
-	-s	Suppress open and read errors
 	-v	Select non-matching lines
+	-s	Suppress open and read errors
+	-r	Recurse
+	-R	Recurse and dereference symlinks
 	-i	Ignore case
 	-w	Match whole words only
 	-x	Match whole lines only
 	-F	PATTERN is a literal (not regexp)
 	-E	PATTERN is an extended regexp
+	-m N	Match up to N times per file
+	-A N	Print N lines of trailing context
+	-B N	Print N lines of leading context
+	-C N	Same as '-A N -B N'
 	-e PTRN	Pattern to match
 	-f FILE	Read pattern from file
 status 2
@@ -87,17 +106,27 @@ Usage: grep [-HhnlLoqvsrRiwFE] [-m N] [-A|B|C N] { PATTERN | -e PATTERN... | -f 
 
 Search for PATTERN in FILEs (or stdin)
 
+	-H	Add 'filename:' prefix
+	-h	Do not add 'filename:' prefix
 	-n	Add 'line_no:' prefix
 	-l	Show only names of files that match
+	-L	Show only names of files that don't match
 	-c	Show only count of matching lines
+	-o	Show only the matching part of line
 	-q	Quiet. Return 0 if PATTERN is found, 1 otherwise
-	-s	Suppress open and read errors
 	-v	Select non-matching lines
+	-s	Suppress open and read errors
+	-r	Recurse
+	-R	Recurse and dereference symlinks
 	-i	Ignore case
 	-w	Match whole words only
 	-x	Match whole lines only
 	-F	PATTERN is a literal (not regexp)
 	-E	PATTERN is an extended regexp
+	-m N	Match up to N times per file
+	-A N	Print N lines of trailing context
+	-B N	Print N lines of leading context
+	-C N	Same as '-A N -B N'
 	-e PTRN	Pattern to match
 	-f FILE	Read pattern from file
 status 2
@@ -116,17 +145,27 @@ Usage: grep [-HhnlLoqvsrRiwFE] [-m N] [-A|B|C N] { PATTERN | -e PATTERN... | -f 
 
 Search for PATTERN in FILEs (or stdin)
 
+	-H	Add 'filename:' prefix
+	-h	Do not add 'filename:' prefix
 	-n	Add 'line_no:' prefix
 	-l	Show only names of files that match
+	-L	Show only names of files that don't match
 	-c	Show only count of matching lines
+	-o	Show only the matching part of line
 	-q	Quiet. Return 0 if PATTERN is found, 1 otherwise
-	-s	Suppress open and read errors
 	-v	Select non-matching lines
+	-s	Suppress open and read errors
+	-r	Recurse
+	-R	Recurse and dereference symlinks
 	-i	Ignore case
 	-w	Match whole words only
 	-x	Match whole lines only
 	-F	PATTERN is a literal (not regexp)
 	-E	PATTERN is an extended regexp
+	-m N	Match up to N times per file
+	-A N	Print N lines of trailing context
+	-B N	Print N lines of leading context
+	-C N	Same as '-A N -B N'
 	-e PTRN	Pattern to match
 	-f FILE	Read pattern from file
 status 2
@@ -136,17 +175,27 @@ Usage: grep [-HhnlLoqvsrRiwFE] [-m N] [-A|B|C N] { PATTERN | -e PATTERN... | -f 
 
 Search for PATTERN in FILEs (or stdin)
 
+	-H	Add 'filename:' prefix
+	-h	Do not add 'filename:' prefix
 	-n	Add 'line_no:' prefix
 	-l	Show only names of files that match
+	-L	Show only names of files that don't match
 	-c	Show only count of matching lines
+	-o	Show only the matching part of line
 	-q	Quiet. Return 0 if PATTERN is found, 1 otherwise
-	-s	Suppress open and read errors
 	-v	Select non-matching lines
+	-s	Suppress open and read errors
+	-r	Recurse
+	-R	Recurse and dereference symlinks
 	-i	Ignore case
 	-w	Match whole words only
 	-x	Match whole lines only
 	-F	PATTERN is a literal (not regexp)
 	-E	PATTERN is an extended regexp
+	-m N	Match up to N times per file
+	-A N	Print N lines of trailing context
+	-B N	Print N lines of leading context
+	-C N	Same as '-A N -B N'
 	-e PTRN	Pattern to match
 	-f FILE	Read pattern from file
 status 2
@@ -156,17 +205,27 @@ Usage: grep [-HhnlLoqvsrRiwFE] [-m N] [-A|B|C N] { PATTERN | -e PATTERN... | -f 
 
 Search for PATTERN in FILEs (or stdin)
 
+	-H	Add 'filename:' prefix
+	-h	Do not add 'filename:' prefix
 	-n	Add 'line_no:' prefix
 	-l	Show only names of files that match
+	-L	Show only names of files that don't match
 	-c	Show only count of matching lines
+	-o	Show only the matching part of line
 	-q	Quiet. Return 0 if PATTERN is found, 1 otherwise
-	-s	Suppress open and read errors
 	-v	Select non-matching lines
+	-s	Suppress open and read errors
+	-r	Recurse
+	-R	Recurse and dereference symlinks
 	-i	Ignore case
 	-w	Match whole words only
 	-x	Match whole lines only
 	-F	PATTERN is a literal (not regexp)
 	-E	PATTERN is an extended regexp
+	-m N	Match up to N times per file
+	-A N	Print N lines of trailing context
+	-B N	Print N lines of leading context
+	-C N	Same as '-A N -B N'
 	-e PTRN	Pattern to match
 	-f FILE	Read pattern from file
 status 2
@@ -184,17 +243,27 @@ Usage: grep [-HhnlLoqvsrRiwFE] [-m N] [-A|B|C N] { PATTERN | -e PATTERN... | -f 
 
 Search for PATTERN in FILEs (or stdin)
 
+	-H	Add 'filename:' prefix
+	-h	Do not add 'filename:' prefix
 	-n	Add 'line_no:' prefix
 	-l	Show only names of files that match
+	-L	Show only names of files that don't match
 	-c	Show only count of matching lines
+	-o	Show only the matching part of line
 	-q	Quiet. Return 0 if PATTERN is found, 1 otherwise
-	-s	Suppress open and read errors
 	-v	Select non-matching lines
+	-s	Suppress open and read errors
+	-r	Recurse
+	-R	Recurse and dereference symlinks
 	-i	Ignore case
 	-w	Match whole words only
 	-x	Match whole lines only
 	-F	PATTERN is a literal (not regexp)
 	-E	PATTERN is an extended regexp
+	-m N	Match up to N times per file
+	-A N	Print N lines of trailing context
+	-B N	Print N lines of leading context
+	-C N	Same as '-A N -B N'
 	-e PTRN	Pattern to match
 	-f FILE	Read pattern from file
 status 2
@@ -203,17 +272,27 @@ Usage: grep [-HhnlLoqvsrRiwFE] [-m N] [-A|B|C N] { PATTERN | -e PATTERN... | -f 
 
 Search for PATTERN in FILEs (or stdin)
 
+	-H	Add 'filename:' prefix
+	-h	Do not add 'filename:' prefix
 	-n	Add 'line_no:' prefix
 	-l	Show only names of files that match
+	-L	Show only names of files that don't match
 	-c	Show only count of matching lines
+	-o	Show only the matching part of line
 	-q	Quiet. Return 0 if PATTERN is found, 1 otherwise
-	-s	Suppress open and read errors
 	-v	Select non-matching lines
+	-s	Suppress open and read errors
+	-r	Recurse
+	-R	Recurse and dereference symlinks
 	-i	Ignore case
 	-w	Match whole words only
 	-x	Match whole lines only
 	-F	PATTERN is a literal (not regexp)
 	-E	PATTERN is an extended regexp
+	-m N	Match up to N times per file
+	-A N	Print N lines of trailing context
+	-B N	Print N lines of leading context
+	-C N	Same as '-A N -B N'
 	-e PTRN	Pattern to match
 	-f FILE	Read pattern from file
 status 2
