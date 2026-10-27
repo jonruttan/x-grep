@@ -53,6 +53,7 @@
 (def set-first! %set-first!)
 
 (def regex-compile (fn (_ pattern) (Regex compile pattern)))
+(def regex-search (fn (_ s rx) (Regex search s rx)))
 (def regex-find-at (fn (_ s pos rx) (Regex find-at s pos rx)))
 (def regex-match (fn (_ s rx) (Regex match s rx)))
 
@@ -91,7 +92,7 @@
   string-length string-ref substring string-append string-concat
   string=? make-string list->string
   length reverse append map filter set-first!
-  regex-compile regex-find-at regex-match
+  regex-compile regex-search regex-find-at regex-match
   file-read-all file-read-fd file-write file-exists? file-type file-ltype file-list-dir
   file-open-write file-close file-unlink
   sys-exit sys-dup2 sys-close)
