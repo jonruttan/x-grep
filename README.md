@@ -8,14 +8,17 @@ build's single most-invoked external, 4,186 calls).  BRE by default
 with the escape-swap translated onto `lib/x/type/regex.x`, `-E` for the
 engine's native ERE-like dialect, `-F` for fixed strings.
 
-Status: pre-release.  Working: `-E -F -c -i -l -n -q -s -v -w -x`,
-`-e`/`-f` pattern collection, bundled short flags, `--`, files with the
-more-than-one prefix rule, `-` and default stdin, and the status
-contract (0 match, 1 none, 2 trouble).  Refused loudly, recorded as
-pending: back-references, `[:named:]` classes.  Divergence inherited
-from the engine: leftmost-first matching where POSIX wants
-leftmost-longest -- invisible to selection, visible to nothing grep
-prints (grep never extracts).
+Status: pre-release.  Working: every option busybox 1.36.1's grep
+takes -- `-H -h -n -l -L -c -o -q -v -s -r -R -i -w -x -F -E`, `-m N`,
+`-A -B -C N` -- with `-e`/`-f` pattern collection, bundled short flags,
+`--`, files with the more-than-one prefix rule, `-` and default stdin,
+and the status contract (0 match, 1 none, 2 trouble); the line loop is
+busybox's grep_file, its quirks included, and the oracle for every spec
+is the real tool.  `[:named:]` classes expand in BRE and ERE.  Refused
+loudly: back-references.  Divergence inherited from the engine:
+leftmost-first matching where POSIX wants leftmost-longest -- invisible
+to selection, visible under `-o` when one alternative is a prefix of
+another (`-oE 'a|ab'` prints `a` where busybox prints `ab`).
 
 Paired with x-lang v0.39.0 (`lang.xon` is the checkable row).
 
@@ -23,7 +26,7 @@ Paired with x-lang v0.39.0 (`lang.xon` is the checkable row).
 
     make install        # into the x on PATH
 
-    x -l grep -- [-EFcilnqsvwx] [-e pat]... [-f patfile]... [pat] [file]...
+    x -l grep -- [-HhnlLoqvsrRiwFE] [-m N] [-A|B|C N] [-e pat]... [-f patfile]... [pat] [file]...
 
     printf 'aa\nbb\n' | x -l grep 'a'
     x -l grep -- -in pattern file1 file2
@@ -44,7 +47,7 @@ every expectation taken from a real grep run.
     lang.xon          what this bundle IS (lang, dialect, pairing, entry)
     run.x             the entry: seam globals, and operands mean "be grep"
     grep/prims.x      the platform layer (byte doors and File, one file)
-    grep/bre.x        BRE/-i/-w compiled into engine patterns; matchers
+    grep/bre.x        BRE/-i/[:classes:] compiled into engine patterns; the -w, -x and -o loops
     grep/core.x       options, the line loop, the status
     grep/cli.x        stdin reclaim, grep-main (the exit)
     tests/            markdown specs + the platform's runner, vendored nowhere

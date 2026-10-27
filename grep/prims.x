@@ -53,7 +53,7 @@
 (def set-first! %set-first!)
 
 (def regex-compile (fn (_ pattern) (Regex compile pattern)))
-(def regex-search (fn (_ s rx) (Regex search s rx)))
+(def regex-find-at (fn (_ s pos rx) (Regex find-at s pos rx)))
 (def regex-match (fn (_ s rx) (Regex match s rx)))
 
 ; File read/write are the raw syscall patterns -- see x-awk/awk/prims.x.
@@ -70,6 +70,13 @@
     (def r (File read fd buf n))
     (if (if (number? r) (> r 0) #f) (substring buf 0 r) "")))
 (def file-exists? (fn (_ path) (File exists? path)))
+; what PATH names, as a symbol (file dir link ...), or nil for nothing; type
+; follows a symlink, ltype reports it
+(def file-type (fn (_ path) (File type path)))
+(def file-ltype (fn (_ path) (File ltype path)))
+; the entries of a directory in the order the kernel gives them (File
+; list-dir answers them last first)
+(def file-list-dir (fn (_ path) (reverse (File list-dir path))))
 (def file-open-write
   (fn (_ path) (File open path (list (lit wronly) (lit creat) (lit trunc)))))
 (def file-close (fn (_ fd) (File close fd)))
@@ -84,7 +91,7 @@
   string-length string-ref substring string-append string-concat
   string=? make-string list->string
   length reverse append map filter set-first!
-  regex-compile regex-search regex-match
-  file-read-all file-read-fd file-write file-exists?
+  regex-compile regex-find-at regex-match
+  file-read-all file-read-fd file-write file-exists? file-type file-ltype file-list-dir
   file-open-write file-close file-unlink
   sys-exit sys-dup2 sys-close)
