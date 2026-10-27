@@ -12,9 +12,11 @@ Status: pre-release.  Working: every option busybox 1.36.1's grep
 takes -- `-H -h -n -l -L -c -o -q -v -s -r -R -i -w -x -F -E`, `-m N`,
 `-A -B -C N` -- with `-e`/`-f` pattern collection, bundled short flags,
 `--`, files with the more-than-one prefix rule, `-` and default stdin,
-and the status contract (0 match, 1 none, 2 trouble); the line loop is
-busybox's grep_file, its quirks included, and the oracle for every spec
-is the real tool.  `[:named:]` classes expand in BRE and ERE.  Refused
+and the status contract (0 match, 1 none, 2 trouble).  x-grep is the
+middle ground between GNU, BSD and busybox grep, on portable idioms:
+where the three differ, the common ground of GNU and BSD wins, and every
+spec expectation comes from a real grep run.  `[:named:]` classes expand
+in BRE and ERE.  Refused
 loudly: back-references.  Divergence inherited from the engine:
 leftmost-first matching where POSIX wants leftmost-longest -- invisible
 to selection, visible under `-o` when one alternative is a prefix of

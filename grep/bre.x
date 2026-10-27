@@ -15,10 +15,11 @@
 ; is needed.  A [:named:] class expands inside its bracket to the bytes it
 ; stands for, in the engine's own class syntax.
 ;
-; -w and -x are busybox's loops around a match, not part of the pattern: a
-; match whose neighbours are word bytes is retried from its end, and -x
-; wants the match to be the whole line.  The -o loop continues from a hit
-; with the bare pattern, as busybox's does.
+; -w and -x are loops around a match, not part of the pattern: a match
+; whose neighbours are word bytes is retried from its end, and -x wants
+; the match to be the whole line.  Every matcher answers its first
+; admitted match at or after a position, so -o can walk a line taking the
+; earliest match of any pattern each time, as GNU and BSD grep print it.
 ;
 ; Refused loudly, because a loud error beats a silent wrong match:
 ; back-references \1-\9 (the engine cannot).
@@ -240,25 +241,25 @@
     (if (%grep-word-byte? (if (> so 0) (byte-at line (- so 1)) 32)) #f
       (not (%grep-word-byte? (if (< eo len) (byte-at line eo) 32))))))
 
-; The first match of RX in LINE that -w and -x admit, as (so eo), or nil.
-; -w retries from the end of a match that sits against a word byte, as
-; long as the match moved; -x asks the engine for the whole line, so a
-; leftmost-first engine still finds the long alternative.
+; The first match of RX in LINE at or after AT that -w and -x admit, as
+; (so eo), or nil.  -w retries from the end of a match that sits against
+; a word byte, as long as the match moved; -x asks the engine for the
+; whole line, so a leftmost-first engine still finds the long alternative.
 (def %grep-rx-hit
-  (fn (_ rx line word xline)
+  (fn (_ rx line word xline at)
     (def len (byte-len line))
     (def go
-      (fn (self at)
-        (def m (regex-find-at line at rx))
+      (fn (self from)
+        (def m (regex-find-at line from rx))
         (match
           ((null? m) ())
           ((not word) m)
           ((%grep-word-fit? line len (first m) (first (rest m))) m)
-          ((> (first (rest m)) at) (self (first (rest m))))
+          ((> (first (rest m)) from) (self (first (rest m))))
           (#t ()))))
     (if xline
-      (if (regex-match line rx) (list 0 len) ())
-      (go 0))))
+      (if (if (= at 0) (regex-match line rx) #f) (list 0 len) ())
+      (go at))))
 
 ; the index of NEEDLE in HAY at or after AT, bytes, or -1
 (def %grep-find-from
@@ -277,46 +278,67 @@
           (if (hit? i 0) i (self (+ i 1))))))
     (go at)))
 
-; The first occurrence of NEEDLE in HAY that -w and -x admit, as (so eo),
-; or nil.  -x wants the first occurrence to be the whole line; -w retries
-; one byte on, as busybox's strstr loop does.
+; The first occurrence of NEEDLE in HAY at or after AT that -w and -x
+; admit, as (so eo), or nil.  -x wants the occurrence to be the whole
+; line; -w retries one byte on.
 (def %grep-fix-hit
-  (fn (_ needle hay word xline)
+  (fn (_ needle hay word xline at)
     (def len (byte-len hay))
     (def nlen (byte-len needle))
     (def go
-      (fn (self at)
-        (def so (%grep-find-from hay needle at))
+      (fn (self from)
+        (def so (%grep-find-from hay needle from))
         (match
           ((< so 0) ())
           (xline (if (if (= so 0) (= nlen len) #f) (list 0 len) ()))
           ((not word) (list so (+ so nlen)))
           ((%grep-word-fit? hay len so (+ so nlen)) (list so (+ so nlen)))
           (#t (self (+ so 1))))))
-    (go 0)))
+    (go at)))
+
+; one matcher's first admitted match at or after AT; LLINE is the lowered
+; line fixed matchers see under -i, nil otherwise
+(def %grep-match-at
+  (fn (_ m line lline word xline at)
+    (if (eq? (first m) (lit rx))
+      (%grep-rx-hit (first (rest m)) line word xline at)
+      (%grep-fix-hit (first (rest m)) (if (null? lline) line lline) word xline at))))
 
 ; Does LINE satisfy one of MATCHERS?  Answers (matcher so eo) for the
-; first that does, or nil.  LLINE is the lowered line fixed matchers
-; see under -i, nil otherwise.
+; first that does, or nil -- selection stops at the first.
 (def %grep-hit-one
   (fn (_ again ms line lline word xline)
-    (def m (first ms))
-    (def p
-      (if (eq? (first m) (lit rx))
-        (%grep-rx-hit (first (rest m)) line word xline)
-        (%grep-fix-hit (first (rest m)) (if (null? lline) line lline) word xline)))
-    (if (null? p) (again (rest ms) line lline word xline) (pair m p))))
+    (def p (%grep-match-at (first ms) line lline word xline 0))
+    (if (null? p) (again (rest ms) line lline word xline) (pair (first ms) p))))
 
 (def grep-hit
   (fn (self ms line lline word xline)
     (if (null? ms) ()
       (%grep-hit-one self ms line lline word xline))))
 
-; The next match of a regex matcher at or after FROM, bare: no -w, no -x,
-; and ^ cannot match past the start.  (so eo) or nil.
-(def grep-hit-from
-  (fn (_ m line from)
-    (regex-find-at line from (first (rest m)))))
+; The earliest match of any of MATCHERS at or after AT, the longest when
+; two start together, as (matcher so eo) or nil -- what -o prints next.
+(def %grep-better?
+  (fn (_ p best)
+    (match
+      ((null? best) #t)
+      ((< (first p) (first best)) #t)
+      ((> (first p) (first best)) #f)
+      (#t (> (first (rest p)) (first (rest best)))))))
+
+(def grep-hit-at
+  (fn (self ms line lline word xline at best)
+    (if (null? ms) best
+      (%grep-hit-at-one self ms line lline word xline at best))))
+
+(def %grep-hit-at-one
+  (fn (_ again ms line lline word xline at best)
+    (def p (%grep-match-at (first ms) line lline word xline at))
+    (again (rest ms) line lline word xline at
+      (if (null? p) best
+        (if (%grep-better? p (if (null? best) () (rest best)))
+          (pair (first ms) p)
+          best)))))
 
 (provide grep/bre grep-xlate-bre grep-xlate grep-b->s grep-compile-one
-  grep-lower grep-hit grep-hit-from)
+  grep-lower grep-hit grep-hit-at)
