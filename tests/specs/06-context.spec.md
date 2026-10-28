@@ -1,13 +1,14 @@
 # @weight 2
 
-Context lines and the match limit, as busybox 1.36.1's grep prints them:
--A, -B and -C around a selected line, each context line's prefix joined
-with - rather than :, a -- between groups that are not adjacent, and -m
+Context lines and the match limit: -A, -B and -C around a selected line,
+each context line's prefix joined with - rather than :, a -- between
+groups that are not adjacent or belong to different files, and -m
 stopping a file after its Nth selected line, once the trailing context is
-out.  The separator's state spans files -- a quirk of the oracle, kept.
-Every expectation from a busybox run; a case's last output line is the
-exit status, and a case with a complaint shows `stderr:` and what grep
-wrote there.
+out -- a selected line past the limit is context at most.  Every
+expectation from a real grep run -- busybox 1.36.1, and where busybox
+stands alone, BSD grep, whose answer GNU grep shares (-m 0 is GNU's:
+nothing, and 1).  A case's last output line is the exit status, and a
+case with a complaint shows `stderr:` and what grep wrote there.
 
 ## the fixture
 
@@ -206,18 +207,20 @@ c
 0
 ```
 
-### -o -v leaves a context line's prefix alone and unterminated
+### -o -v prints no part of a selected line; its context prints whole
 
 ```grep
 (do (display (grep-run (list "-ov" "-A1" "x") "x\ny\nx\n")) (newline) (display (grep-run (list "-nov" "-A1" "x") "x\ny\nx\n")))
 ```
 ---
 ```output
+x
 0
-3-0
+3-x
+0
 ```
 
-### the separator's state spans files
+### a new file starts a new group
 
 ```grep
 (do (display (grep-run (list "-A1" "x" "/tmp/x-grep-ctx-1.txt" "/tmp/x-grep-ctx-2.txt") "")) (newline) (display (grep-run (list "-nC1" "x" "/tmp/x-grep-ctx-1.txt" "/tmp/x-grep-ctx-2.txt") "")))
@@ -225,6 +228,7 @@ c
 ---
 ```output
 /tmp/x-grep-ctx-1.txt:x
+--
 /tmp/x-grep-ctx-2.txt:x
 0
 /tmp/x-grep-ctx-1.txt:1:x
@@ -236,7 +240,7 @@ c
 
 ## -m, the match limit
 
-### N selected lines a file, and 0 reads one line and still answers 0
+### N selected lines a file; 0 reads nothing and finds nothing
 
 ```grep
 (do (display (grep-run (list "-m1" "x") "x\nx\n")) (newline) (display (grep-run (list "-m0" "x") "x\nx\n")) (newline) (display (grep-run (list "-m2" "-n" "x") "x\nx\nx\n")))
@@ -245,21 +249,24 @@ c
 ```output
 x
 0
-0
+1
 1:x
 2:x
 0
 ```
 
-### the trailing context comes out first
+### the trailing context comes out first, a selected line among it
 
 ```grep
-(display (grep-run (list "-m1" "-A1" "x") "x\ny\nx\n"))
+(do (display (grep-run (list "-m1" "-A1" "x") "x\ny\nx\n")) (newline) (display (grep-run (list "-m1" "-A1" "x") "x\nx\ny\n")))
 ```
 ---
 ```output
 x
 y
+0
+x
+x
 0
 ```
 

@@ -1,13 +1,14 @@
 # @weight 2
 
-The operands as busybox 1.36.1's grep reads them: -r and -R walk a
-directory operand, in the order the kernel lists it, a directory without
-them reads as nothing, and a file that will not open is a complaint and 2
--- unless -q found something first.  The fixture is a tree under
+The operands: -r and -R walk a directory operand, in the order the
+kernel lists it (and "." when there is no operand), a directory without
+them is refused as one, and a file that will not open is a complaint and
+2 -- unless -q found something first.  The fixture is a tree under
 /tmp/x-grep-r; every case names one match a directory, so the kernel's
-order never shows.  Every expectation from a busybox run on the same
-tree; a case's last output line is the exit status, and a case with a
-complaint shows `stderr:` and what grep wrote there.
+order never shows.  Every expectation from a real grep run on the same
+tree -- busybox 1.36.1, and where busybox stands alone, BSD grep, whose
+answer GNU grep shares.  A case's last output line is the exit status,
+and a case with a complaint shows `stderr:` and what grep wrote there.
 
 ## the fixture
 
@@ -112,15 +113,13 @@ ax
 0
 ```
 
-### -q ends the walk; a file operand and standard input are as without -r
+### -q ends the walk; a file operand is as without -r
 
 ```grep
-(do (display (grep-run (list "-rq" "ax" "/tmp/x-grep-r/d") "")) (newline) (display (grep-run (list "-r" "ax" "/tmp/x-grep-r/three.txt") "")) (newline) (display (grep-run (list "-r" "ax") "ax\n")))
+(do (display (grep-run (list "-rq" "ax" "/tmp/x-grep-r/d") "")) (newline) (display (grep-run (list "-r" "ax" "/tmp/x-grep-r/three.txt") "")))
 ```
 ---
 ```output
-0
-ax
 0
 ax
 0
@@ -128,19 +127,23 @@ ax
 
 ## directories and files that will not open
 
-### a directory without -r reads as nothing
+### a directory without -r is refused as one, and -s keeps the 2
 
 ```grep
-(do (display (grep-run (list "x" "/tmp/x-grep-r/d") "")) (newline) (display (grep-run (list "-c" "x" "/tmp/x-grep-r/d") "")) (newline) (display (grep-run (list "-c" "x" "/tmp/x-grep-r/d" "/tmp/x-grep-r/one.txt") "")))
+(do (run (list "x" "/tmp/x-grep-r/d") "") (run (list "-c" "x" "/tmp/x-grep-r/d" "/tmp/x-grep-r/one.txt") "") (run (list "-s" "x" "/tmp/x-grep-r/d" "/tmp/x-grep-r/one.txt") ""))
 ```
 ---
 ```output
-1
-0
-1
-/tmp/x-grep-r/d:0
+stderr:
+grep: /tmp/x-grep-r/d: Is a directory
+status 2
 /tmp/x-grep-r/one.txt:1
-0
+stderr:
+grep: /tmp/x-grep-r/d: Is a directory
+status 2
+/tmp/x-grep-r/one.txt:x
+stderr:
+status 2
 ```
 
 ### a missing file is a complaint and 2, after the others are read; -s keeps the 2

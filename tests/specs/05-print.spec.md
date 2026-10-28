@@ -2,9 +2,9 @@
 
 What a selected line prints, past the line itself: -o's matching parts,
 -w's loop around a match, the -h/-H name prefix and -L's names.  Every
-expectation from busybox 1.36.1's grep on the same input; the quirks are
-its own, kept because the real tool is the oracle.  A case's last output
-line is the exit status.
+expectation from a real grep on the same input -- busybox 1.36.1, and
+where busybox stands alone, BSD grep, whose answer GNU grep shares.  A
+case's last output line is the exit status.
 
 ## -o, the matching part
 
@@ -77,7 +77,7 @@ b
 ---
     1
 
-### -F prints the pattern as given, once a line
+### -F prints each occurrence as it stands in the line
 
 ```grep
 (do (display (grep-run (list "-oF" "a.b") "xa.bya.b\n")) (newline) (display (grep-run (list "-oF" "-i" "A.B") "xa.bya.b\n")))
@@ -85,8 +85,10 @@ b
 ---
 ```output
 a.b
+a.b
 0
-A.B
+a.b
+a.b
 0
 ```
 
@@ -150,7 +152,7 @@ cd
 0
 ```
 
-### -w admits the first part; the rest come from the bare pattern
+### -w admits only the whole words, each of them (GNU; BSD stops at the first)
 
 ```grep
 (display (grep-run (list "-ow" "cat") "cat concat cat\n"))
@@ -159,20 +161,23 @@ cd
 ```output
 cat
 cat
-cat
 0
 ```
 
-### the last pattern given is tried first
+### the earliest match of any pattern comes first, the longest at a tie
 
 ```grep
-(do (display (grep-run (list "-o" "-e" "a" "-e" "b") "ab\n")) (newline) (display (grep-run (list "-o" "-e" "b" "-e" "a") "ab\n")))
+(do (display (grep-run (list "-o" "-e" "a" "-e" "b") "ab\n")) (newline) (display (grep-run (list "-o" "-e" "b" "-e" "a") "ab\n")) (newline) (display (grep-run (list "-o" "-e" "a" "-e" "ab") "ab\n")))
 ```
 ---
 ```output
+a
 b
 0
 a
+b
+0
+ab
 0
 ```
 

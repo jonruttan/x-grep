@@ -10,10 +10,12 @@
 ; stdout, complaints on fd 2.  INPUT stands for stdin -- the pure form
 ; the specs drive; the CLI passes a thunk-read of the real stdin.  File
 ; operands read through File; "-" is stdin; more than one file operand
-; turns the name: prefix on, POSIX's rule.  The line loop is busybox
-; 1.36.1's grep_file, quirks included: the -- separator's state spans
-; files, -m 0 reads one line and still answers 0, -L -c prints the count
-; and then the name.
+; turns the name: prefix on, POSIX's rule.  The line loop is shaped on
+; busybox 1.36.1's grep_file; where busybox, GNU and BSD grep differ, the
+; common ground of GNU and BSD wins: a -- between context groups of
+; different files, -o taking the earliest match of any pattern, lines
+; past -m's limit kept as trailing context, -r alone walking ".", a
+; directory operand without -r refused as one.
 
 ; --- Option parsing (pure) ---------------------------------------------------
 ; The options, declared once: what the parse accepts, what --help prints and
@@ -22,7 +24,7 @@
 (import grep/prims integer->char byte-at byte-len substring string=?
   list->string string-append string-concat reverse append map set-first!
   file-read-all file-write file-exists? file-type file-ltype file-list-dir)
-(import grep/bre grep-compile-one grep-lower grep-hit grep-hit-from)
+(import grep/bre grep-compile-one grep-lower grep-hit grep-hit-at)
 
 (def grep-options
   (Opts declare "grep"
@@ -284,8 +286,7 @@
 
 ; The run's settings, read once from the plan as an alist the builders
 ; below destructure on entry.  -c -q -l -L print no lines, so -n and the
-; context go with them; the matchers are busybox's list, which it builds
-; by prepending: the last pattern given is tried first, which -o shows.
+; context go with them; -r with no operand walks ".".
 (def %grep-settings
   (fn (_ plan)
     (def flags (first plan))
@@ -301,10 +302,11 @@
     (def ci (has? (lit ci)))
     (def label (if (has? (lit ere)) (lit ere)
                  (if (has? (lit fixed)) (lit fixed) (lit bre))))
+    (def recurse (if (has? (lit recurse)) #t (has? (lit follow))))
+    (def files (first (rest (rest plan))))
     (list
-      (pair (lit ms) (map (fn (_ p) (grep-compile-one p label ci))
-                       (reverse (first (rest plan)))))
-      (pair (lit files) (first (rest (rest plan))))
+      (pair (lit ms) (map (fn (_ p) (grep-compile-one p label ci)) (first (rest plan))))
+      (pair (lit files) (if (if recurse (null? files) #f) (list ".") files))
       (pair (lit max) (first counts))
       (pair (lit after) after)
       (pair (lit before) before)
@@ -321,31 +323,32 @@
       (pair (lit word) (has? (lit word)))
       (pair (lit xline) (has? (lit xline)))
       (pair (lit follow) (has? (lit follow)))
-      (pair (lit recurse) (if (has? (lit recurse)) #t (has? (lit follow))))
+      (pair (lit recurse) recurse)
       (pair (lit nofname) (has? (lit nofname)))
       (pair (lit fname) (has? (lit fname))))))
 
 (def %grep-setting
   (fn (_ s key) (Assoc get key s)))
 
-; busybox's print_line, closed over the run's separator state, which
-; spans files: the -- when context lines are not adjacent, then the name
-; and number with DECO, then the line -- not under -o -v, where the
-; prefix stands alone and unterminated.  A line numbered below one is
-; leading context that is not there.
+; The line printer: a -- between context groups that are not adjacent,
+; or belong to different files, then the name and number with DECO, then
+; the line.  Answers (PRINT-LINE START-FILE!): the scanner calls the
+; second at each file so the first group of a new file gets its --.
 (def %grep-printer
   (fn (_ s)
     (def context (%grep-setting s (lit context)))
     (def lineno (%grep-setting s (lit lineno)))
-    (def bodyless (if (%grep-setting s (lit only)) (%grep-setting s (lit invert)) #f))
     (def did-print (pair #f ()))
-    (def last-printed (pair 0 ()))
+    ; the last line printed, or nothing yet in this file
+    (def last-printed (pair () ()))
     (def separate?
       (fn (_ linenum)
-        (if context
-          (if (first did-print) (not (= (first last-printed) (- linenum 1))) #f)
-          #f)))
-    (def print-line!
+        (match
+          ((not context) #f)
+          ((not (first did-print)) #f)
+          ((null? (first last-printed)) #t)
+          (#t (not (= (first last-printed) (- linenum 1)))))))
+    (def print-line
       (fn (_ prefix? name line linenum deco)
         (if (separate? linenum) (display "--\n") ())
         (set-first! did-print #t)
@@ -354,34 +357,30 @@
           (string-concat
             (list (if prefix? (string-append name deco) "")
               (if lineno (string-append (%grep-int->str linenum) deco) "")
-              (if bodyless "" (string-append line "\n")))))))
-    (fn (_ prefix? name line linenum deco)
-      (if (< linenum 1) ()
-        (print-line! prefix? name line linenum deco)))))
+              line "\n")))))
+    (list print-line (fn (_) (set-first! last-printed ())))))
 
-; -o on a selected line: -F prints the pattern once, a regex every match
-; of the matcher that hit from the hit onward, an empty one skipped and
-; stepped over; nothing for a line -v selected
+; -o on a selected line: each match of any pattern in turn, the earliest
+; next, an empty one skipped and stepped over; nothing for a line -v
+; selected, which has none
 (def %grep-only-printer
-  (fn (_ print-line)
+  (fn (_ s print-line)
+    (def ms (%grep-setting s (lit ms)))
+    (def word (%grep-setting s (lit word)))
+    (def xline (%grep-setting s (lit xline)))
     (def only-next
-      (fn (_ again prefix? name line linenum m from)
-        (def nm (grep-hit-from m line from))
-        (if (null? nm) ()
-          (again prefix? name line linenum m (first nm) (first (rest nm))))))
+      (fn (_ again prefix? name line lline linenum from)
+        (def hit (grep-hit-at ms line lline word xline from ()))
+        (if (null? hit) ()
+          (again prefix? name line lline linenum (first (rest hit)) (first (rest (rest hit)))))))
     (def only-loop
-      (fn (self prefix? name line linenum m so eo)
+      (fn (self prefix? name line lline linenum so eo)
         (def len (- eo so))
         (if (> len 0) (print-line prefix? name (substring line so eo) linenum ":") ())
         (if (>= eo (byte-len line)) ()
-          (only-next self prefix? name line linenum m (if (= len 0) (+ eo 1) eo)))))
-    (fn (_ prefix? name line linenum hit)
-      (match
-        ((null? hit) ())
-        ((eq? (first (first hit)) (lit fix))
-          (print-line prefix? name (first (rest (rest (first hit)))) linenum ":"))
-        (#t (only-loop prefix? name line linenum (first hit)
-              (first (rest hit)) (first (rest (rest hit)))))))))
+          (only-next self prefix? name line lline linenum (if (= len 0) (+ eo 1) eo)))))
+    (fn (_ prefix? name line lline linenum)
+      (only-next only-loop prefix? name line lline linenum 0))))
 
 (def %grep-say-name
   (fn (_ name answer)
@@ -411,7 +410,7 @@
 ; local is defined before the one that names it, the later of two that
 ; call each other handed in as AGAIN.
 (def %grep-scanner
-  (fn (_ s print-line only-out finish)
+  (fn (_ s print-line start-file! only-out finish)
     (def ms (%grep-setting s (lit ms)))
     (def max (%grep-setting s (lit max)))
     (def max? (not (null? max)))
@@ -436,18 +435,15 @@
         (if (null? bef) ()
           (print-before-one self prefix? name bef))))
     (def emit
-      (fn (_ prefix? name bef line ln hit)
+      (fn (_ prefix? name bef line lline ln)
         (print-before prefix? name (reverse bef))
         (if only
-          (only-out prefix? name line ln hit)
+          (only-out prefix? name line lline ln)
           (print-line prefix? name line ln ":"))))
-    ; on to the next line, unless -m's matches are in and their context
-    ; printed
+    ; on to the next line
     (def next
       (fn (_ again prefix? name ls ln nmatches n-after bef)
-        (if (if max? (if (= n-after 0) (= nmatches max) #f) #f)
-          (finish prefix? name nmatches)
-          (again prefix? name (rest ls) ln nmatches n-after bef))))
+        (again prefix? name (rest ls) ln nmatches n-after bef)))
     (def after-one
       (fn (_ again prefix? name ls ln nmatches n-after bef line)
         (print-line prefix? name line ln "-")
@@ -462,28 +458,36 @@
               (%grep-take (pair (pair ln line) bef) before)))
           (#t (next again prefix? name ls ln nmatches 0 bef)))))
     (def selected
-      (fn (_ again prefix? name ls ln nmatches bef line hit)
-        (if count () (emit prefix? name bef line ln hit))
+      (fn (_ again prefix? name ls ln nmatches bef line lline)
+        (if count () (emit prefix? name bef line lline ln))
         (next again prefix? name ls ln nmatches after ())))
     (def step
       (fn (_ again prefix? name ls n nmatches n-after bef)
         (def line (first ls))
         (def ln (+ n 1))
-        (def hit (grep-hit ms line (if ci (grep-lower line) ()) word xline))
+        (def lline (if ci (grep-lower line) ()))
+        (def hit (grep-hit ms line lline word xline))
         (def sel (if invert (null? hit) (not (null? hit))))
         (match
           ((not sel) (unselected again prefix? name ls ln nmatches n-after bef line))
           (quiet (lit quit))
           (names (%grep-say-name name #t))
           (unmatched #f)
-          ; a match past -m's limit ends the file
-          ((if max? (> (+ nmatches 1) max) #f) (finish prefix? name (+ nmatches 1)))
-          (#t (selected again prefix? name ls ln (+ nmatches 1) bef line hit)))))
+          ; a selected line past -m's limit is trailing context at most
+          ((if max? (>= nmatches max) #f)
+            (unselected again prefix? name ls ln nmatches n-after bef line))
+          (#t (selected again prefix? name ls ln (+ nmatches 1) bef line lline)))))
+    ; the file is done at its last line, or once -m's matches are in and
+    ; their trailing context out
     (def go
       (fn (self prefix? name ls n nmatches n-after bef)
-        (if (null? ls) (finish prefix? name nmatches)
-          (step self prefix? name ls n nmatches n-after bef))))
+        (match
+          ((null? ls) (finish prefix? name nmatches))
+          ((if max? (if (= n-after 0) (>= nmatches max) #f) #f)
+            (finish prefix? name nmatches))
+          (#t (step self prefix? name ls n nmatches n-after bef)))))
     (fn (_ prefix? name lines)
+      (start-file!)
       (go prefix? name lines 0 0 0 ()))))
 
 ; "grep: PATH: WHY\n"
@@ -491,7 +495,7 @@
   (fn (_ path why)
     (string-concat (list "grep: " path ": " why "\n"))))
 
-; The operands, busybox's main loop over argv with grep_dir and
+; The operands: the loop over them, with grep_dir and
 ; file_action_grep under -r.  The walker answers the run's status.  The
 ; name prefix is threaded: a directory under -r turns it on for the rest
 ; of the run, unless -h.
@@ -566,8 +570,7 @@
             (pair (grep-dir (if nofname prefix? #t) f) (if nofname prefix? #t)))
           ((null? kind)
             (pair (open-error! f "No such file or directory") prefix?))
-          ; a directory opens and reads as nothing
-          ((eq? kind (lit dir)) (pair (scan-file prefix? f ()) prefix?))
+          ((eq? kind (lit dir)) (pair (open-error! f "Is a directory") prefix?))
           (#t (pair (grep-path prefix? f) prefix?)))))
     (def status
       (fn (_ matched)
@@ -605,9 +608,11 @@
 (def %grep-go
   (fn (_ plan input)
     (def s (%grep-settings plan))
-    (def print-line (%grep-printer s))
+    (def printer (%grep-printer s))
+    (def print-line (first printer))
     (def scan-file
-      (%grep-scanner s print-line (%grep-only-printer print-line) (%grep-finisher s)))
+      (%grep-scanner s print-line (first (rest printer))
+        (%grep-only-printer s print-line) (%grep-finisher s)))
     ((%grep-walker s scan-file input) (%grep-setting s (lit files)))))
 
 (provide grep/core grep-run grep-parse-cli grep-options grep-lines grep-plan-files)
