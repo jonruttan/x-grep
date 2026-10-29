@@ -111,6 +111,50 @@ BX
 0
 ```
 
+### -i folds every letter a range covers, whatever its ends
+
+```grep
+(do (display (grep-run (list "-xi" "[\\-a]") "\\\n]\nA\na\nB\nb\nC\nc\nd\nD\nY\ny\nZ\nz\n_\n0\n")) (newline) (display (grep-run (list "-xiE" "[Z-c]") "\\\n]\nA\na\nB\nb\nC\nc\nd\nD\nY\ny\nZ\nz\n_\n0\n")) (newline) (display (grep-run (list "-xi" "[0-B]") "\\\n]\nA\na\nB\nb\nC\nc\nd\nD\nY\ny\nZ\nz\n_\n0\n")) (newline) (display (grep-run (list "-xiE" "[^Z-c]") "\\\n]\nA\na\nB\nb\nC\nc\nd\nD\nY\ny\nZ\nz\n_\n0\n")) (newline) (display (grep-run (list "-xi" "[y-~]") "\\\n]\nA\na\nB\nb\nC\nc\nd\nD\nY\ny\nZ\nz\n_\n0\n")))
+```
+---
+```output
+\
+]
+A
+a
+_
+0
+\
+]
+A
+a
+B
+b
+C
+c
+Z
+z
+_
+0
+A
+a
+B
+b
+0
+0
+d
+D
+Y
+y
+0
+0
+Y
+y
+Z
+z
+0
+```
+
 ## the three dialects
 
 ### BRE: bare parens are literal

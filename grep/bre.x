@@ -65,6 +65,22 @@
         (string-append (%grep-class-b->s lo) "-" (grep-b->s hi)))
       (#t (string-append (grep-b->s lo) "-" (grep-b->s hi))))))
 
+; The part of LO-HI inside one case's letters FROM-TO, moved by SHIFT to
+; the other case, as an engine range; "" when they do not meet.
+(def %grep-range-twin
+  (fn (_ lo hi from to shift)
+    (def l (if (> lo from) lo from))
+    (def h (if (< hi to) hi to))
+    (if (> l h) ""
+      (string-append (grep-b->s (+ l shift)) "-" (grep-b->s (+ h shift))))))
+
+; Under -i a range also holds the other case of every letter it covers,
+; whatever its ends are: [Z-c] adds z and A-C.
+(def %grep-range-fold
+  (fn (_ lo hi)
+    (string-append (%grep-range-twin lo hi 97 122 -32)
+      (%grep-range-twin lo hi 65 90 32))))
+
 ; the engine's escapables that mean a CLASS, not a literal -- do not
 ; case-expand these
 (def %grep-esc-special?
@@ -112,8 +128,9 @@
       ((if (= (byte-at pat i) 58) (= (byte-at pat (+ i 1)) 93) #f) i)
       (#t (self pat end (+ i 1))))))
 
-; Copy a [...] class, expanding case when ci: each letter (or letter
-; range) also emits its swapped twin, and a [:named:] class its bytes.
+; Copy a [...] class, expanding case when ci: each letter also emits its
+; swapped twin, each range the twins of the letters it covers, and a
+; [:named:] class its bytes.
 ; Answers (pieces . next-i), pieces reversed.
 (def %grep-xl-class
   (fn (_ pat end i0 ci acc0)
@@ -144,13 +161,9 @@
                   (def hi (byte-at pat (+ i 2)))
                   (def piece
                     (%grep-class-range lo hi))
-                  (def swl (%grep-swap lo))
-                  (def swh (%grep-swap hi))
                   (self (+ i 3)
-                    (if (if ci (not (null? swl)) #f)
-                      (pair (string-append (grep-b->s swl) "-"
-                              (grep-b->s (if (null? swh) hi swh)))
-                        (pair piece acc))
+                    (if ci
+                      (pair (%grep-range-fold lo hi) (pair piece acc))
                       (pair piece acc))
                     #f)))
               (#t
