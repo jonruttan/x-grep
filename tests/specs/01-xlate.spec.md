@@ -79,8 +79,23 @@ a\??b
 [^\]]
 [\]a]
 [^\]a]
-[\]-a]
+[\]^-a]
 a]
+```
+
+### a \ in a bracket is a member, spelled \\ for the engine
+
+```grep
+(do (display (grep-xlate-bre "[\\]")) (newline) (display (grep-xlate-bre "[a\\]")) (newline) (display (grep-xlate-bre "[\\]]")) (newline) (display (grep-xlate-bre "[\\-a]")) (newline) (display (grep-xlate-bre "[Z-\\]")) (newline) (display (grep-xlate-bre "[ \\t]")))
+```
+---
+```output
+[\\]
+[a\\]
+[\\]]
+[\\\]^-a]
+[Z-\]
+[ \\t]
 ```
 
 ## named classes

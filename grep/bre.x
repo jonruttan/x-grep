@@ -39,11 +39,31 @@
 (def grep-b->s
   (fn (_ b) (list->string (list (integer->char b)))))
 
-; A byte as a class member in the engine's syntax: a ] closes the engine's
-; class wherever it stands, so the one POSIX lets in -- first, or opening
-; a range -- is spelled \].
+; A byte as a class member in the engine's syntax.  Inside a POSIX
+; bracket a \ is itself, but the engine's class takes \X as X, so it is
+; spelled \\; a ] closes the engine's class wherever it stands, so the one
+; POSIX lets in -- first, or opening a range -- is spelled \].
 (def %grep-class-b->s
-  (fn (_ b) (if (= b 93) "\\]" (grep-b->s b))))
+  (fn (_ b)
+    (match
+      ((= b 92) "\\\\")
+      ((= b 93) "\\]")
+      (#t (grep-b->s b)))))
+
+; A range LO-HI in the engine's syntax.  The engine reads a range only
+; when its low end is a plain byte, so a \ or ] low end goes in as its
+; own member and the range starts one byte later.  A backward range
+; stays as written.
+(def %grep-class-range
+  (fn (self lo hi)
+    (match
+      ((if (if (= lo 92) #t (= lo 93)) (< lo hi) #f)
+        (string-append (%grep-class-b->s lo) (self (+ lo 1) hi)))
+      ((if (if (= lo 92) #t (= lo 93)) (= lo hi) #f)
+        (%grep-class-b->s lo))
+      ((if (= lo 92) #t (= lo 93))
+        (string-append (%grep-class-b->s lo) "-" (grep-b->s hi)))
+      (#t (string-append (grep-b->s lo) "-" (grep-b->s hi))))))
 
 ; the engine's escapables that mean a CLASS, not a literal -- do not
 ; case-expand these
@@ -123,7 +143,7 @@
                 (let ((lo b))
                   (def hi (byte-at pat (+ i 2)))
                   (def piece
-                    (string-append (%grep-class-b->s lo) "-" (grep-b->s hi)))
+                    (%grep-class-range lo hi))
                   (def swl (%grep-swap lo))
                   (def swh (%grep-swap hi))
                   (self (+ i 3)

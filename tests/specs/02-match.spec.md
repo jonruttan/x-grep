@@ -446,6 +446,76 @@ zzz
 0
 ```
 
+### a \ in a bracket is itself, in BRE and ERE
+
+```grep
+(do (display (grep-run (list "-x" "[\\]") "\\\n]\n^\n_\na\nb\nt\nZ\n[\n")) (newline) (display (grep-run (list "-xE" "[a\\]") "\\\n]\n^\n_\na\nb\nt\nZ\n[\n")) (newline) (display (grep-run (list "-x" "[^\\]") "\\\n]\n^\n_\na\nb\nt\nZ\n[\n")) (newline) (display (grep-run (list "[\\]]") "x\\]y\n\\\nab]\n")) (newline) (display (grep-run (list "-E" "[\\]]") "x\\]y\n\\\nab]\n")))
+```
+---
+```output
+\
+0
+\
+a
+0
+]
+^
+_
+a
+b
+t
+Z
+[
+0
+x\]y
+0
+x\]y
+0
+```
+
+### a range from or to ] and \, in BRE and ERE
+
+```grep
+(do (display (grep-run (list "-x" "[]-a]") "\\\n]\n^\n_\na\nb\nt\nZ\n[\n")) (newline) (display (grep-run (list "-xE" "[\\-a]") "\\\n]\n^\n_\na\nb\nt\nZ\n[\n")) (newline) (display (grep-run (list "-xE" "[^]-a]") "\\\n]\n^\n_\na\nb\nt\nZ\n[\n")) (newline) (display (grep-run (list "-x" "[Z-\\]") "\\\n]\n^\n_\na\nb\nt\nZ\n[\n")))
+```
+---
+```output
+]
+^
+_
+a
+0
+\
+]
+^
+_
+a
+0
+\
+b
+t
+Z
+[
+0
+\
+Z
+[
+0
+```
+
+### [ \t] is a space, a \ and a t, not a tab
+
+```grep
+(display (grep-run (list "-x" "[ \\t]*") " \n\t\nt\n\\\nx\n"))
+```
+---
+```output
+ 
+t
+\
+0
+```
+
 ### [:upper:] and [:lower:], and -i folding both
 
 ```grep
