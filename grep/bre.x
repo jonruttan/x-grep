@@ -39,6 +39,12 @@
 (def grep-b->s
   (fn (_ b) (list->string (list (integer->char b)))))
 
+; A byte as a class member in the engine's syntax: a ] closes the engine's
+; class wherever it stands, so the one POSIX lets in -- first, or opening
+; a range -- is spelled \].
+(def %grep-class-b->s
+  (fn (_ b) (if (= b 93) "\\]" (grep-b->s b))))
+
 ; the engine's escapables that mean a CLASS, not a literal -- do not
 ; case-expand these
 (def %grep-esc-special?
@@ -117,7 +123,7 @@
                 (let ((lo b))
                   (def hi (byte-at pat (+ i 2)))
                   (def piece
-                    (string-append (grep-b->s lo) "-" (grep-b->s hi)))
+                    (string-append (%grep-class-b->s lo) "-" (grep-b->s hi)))
                   (def swl (%grep-swap lo))
                   (def swh (%grep-swap hi))
                   (self (+ i 3)
@@ -132,7 +138,7 @@
                   (self (+ i 1)
                     (if (if ci (not (null? sw)) #f)
                       (pair (grep-b->s sw) (pair (grep-b->s b) acc))
-                      (pair (grep-b->s b) acc))
+                      (pair (%grep-class-b->s b) acc))
                     #f))))))))
     ; leading ^ and a first-position ] are literal parts of the class
     (def i1 (if (if (< i0 end) (= (byte-at pat i0) 94) #f) (+ i0 1) i0))

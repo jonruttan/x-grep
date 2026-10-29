@@ -371,6 +371,81 @@ a
 0
 ```
 
+### a ] first in the bracket is a member, in BRE and ERE
+
+```grep
+(do (display (grep-run (list "[]]") "a]b\nAxB\nqaq\nzzz\n")) (newline) (display (grep-run (list "-E" "[]]") "a]b\nAxB\nqaq\nzzz\n")) (newline) (display (grep-run (list "[]a]") "a]b\nAxB\nqaq\nzzz\n")) (newline) (display (grep-run (list "-E" "[]a]") "a]b\nAxB\nqaq\nzzz\n")) (newline) (display (grep-run (list "\\[[0-9][^]]*\\]") "## [0.39.0] - x\n## [0.39.0 - x\n")))
+```
+---
+```output
+a]b
+0
+a]b
+0
+a]b
+qaq
+0
+a]b
+qaq
+0
+## [0.39.0] - x
+0
+```
+
+### a ] first after the ^ is excluded, in BRE and ERE
+
+```grep
+(do (display (grep-run (list "[^]]") "a]b\nAxB\nqaq\nzzz\n]\n")) (newline) (display (grep-run (list "-E" "[^]]") "a]b\nAxB\nqaq\nzzz\n]\n")) (newline) (display (grep-run (list "[^]a]") "a]b\nAxB\nqaq\nzzz\n]a\n")) (newline) (display (grep-run (list "-E" "[^]a]") "a]b\nAxB\nqaq\nzzz\n]a\n")))
+```
+---
+```output
+a]b
+AxB
+qaq
+zzz
+0
+a]b
+AxB
+qaq
+zzz
+0
+a]b
+AxB
+qaq
+zzz
+0
+a]b
+AxB
+qaq
+zzz
+0
+```
+
+### -i leaves the ] alone and folds the letter beside it
+
+```grep
+(do (display (grep-run (list "-i" "[]]") "a]b\nAxB\nqaq\nzzz\n")) (newline) (display (grep-run (list "-iE" "[]a]") "a]b\nAxB\nqaq\nzzz\n")) (newline) (display (grep-run (list "-i" "[^]a]") "a]b\nAxB\nqaq\nzzz\n]a\n")) (newline) (display (grep-run (list "-iE" "[^]]") "a]b\nAxB\nqaq\nzzz\n]\n")))
+```
+---
+```output
+a]b
+0
+a]b
+AxB
+qaq
+0
+a]b
+AxB
+qaq
+zzz
+0
+a]b
+AxB
+qaq
+zzz
+0
+```
+
 ### [:upper:] and [:lower:], and -i folding both
 
 ```grep

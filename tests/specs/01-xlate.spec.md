@@ -68,6 +68,21 @@ a\??b
 ---
     [a-c]x[^y]
 
+### a first-position ] is a member, spelled \] for the engine
+
+```grep
+(do (display (grep-xlate-bre "[]]")) (newline) (display (grep-xlate-bre "[^]]")) (newline) (display (grep-xlate-bre "[]a]")) (newline) (display (grep-xlate-bre "[^]a]")) (newline) (display (grep-xlate-bre "[]-a]")) (newline) (display (grep-xlate-bre "a]")))
+```
+---
+```output
+[\]]
+[^\]]
+[\]a]
+[^\]a]
+[\]-a]
+a]
+```
+
 ## named classes
 
 ### a name expands to its bytes inside the bracket
