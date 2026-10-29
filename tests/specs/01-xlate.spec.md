@@ -121,7 +121,7 @@ a]
 (grep-run (list "a\\1") "x\n")
 ```
 ---
-    Error: #<err:grep grep: back-references are not supported>
+    Error: grep: grep: back-references are not supported
 
 ### a class name regcomp does not know, and a bracket left open
 
