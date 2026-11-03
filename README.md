@@ -24,7 +24,7 @@ leftmost-first matching where POSIX wants leftmost-longest -- invisible
 to selection, visible under `-o` when one alternative is a prefix of
 another (`-oE 'a|ab'` prints `a` where busybox prints `ab`).
 
-Paired with x-lang v0.39.0 (`lang.xon` is the checkable row).
+Paired with x-lang v0.44.0 (`lang.xon` is the checkable row).
 
 ## Try it
 
