@@ -18,10 +18,11 @@
 (import x/sys/opts)
 
 
-(def char->integer (prim-ref (lit char) (lit ->int)))
-(def integer->char (prim-ref (lit int) (lit ->char)))
-(def byte-at (prim-ref (lit str) (lit byte-ref)))
-(def byte-len (prim-ref (lit str) (lit byte-len)))
+(import x/core/doors char->int int->char str-byte-ref str-byte-len str-make)
+(def char->integer char->int)
+(def integer->char int->char)
+(def byte-at str-byte-ref)
+(def byte-len str-byte-len)
 
 (def string-length (fn (_ s) (Str8 length s)))
 (def string-ref (fn (_ s i) (Str8 ref i s)))
@@ -64,10 +65,9 @@
 ; n writable bytes for a raw read to fill.  A string made with a NUL fill is
 ; not that: strings are C strings, so it is the empty string, a buffer of one
 ; byte, and the platform refuses to make it.
-(def %str-make-raw (prim-ref (lit str) (lit make)))
 (def file-read-fd
   (fn (_ fd n)
-    (def buf (%str-make-raw n))
+    (def buf (str-make n))
     (def r (File read fd buf n))
     (if (if (number? r) (> r 0) #f) (substring buf 0 r) "")))
 (def file-exists? (fn (_ path) (File exists? path)))
