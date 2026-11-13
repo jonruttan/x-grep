@@ -17,7 +17,7 @@ spec expectation comes from a real grep run.
 
 ## Status
 
-Pre-release: no release has been cut. Paired with x-lang v0.44.0
+Pre-release: no release has been cut. Paired with x-lang v0.53.0
 (`lang.xon` is the checkable row).
 
 ## What it does
