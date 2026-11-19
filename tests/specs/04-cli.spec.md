@@ -332,6 +332,24 @@ stderr:
 status 0
 ```
 
+## a refusal
+
+### a regex grep refuses is reported after `grep: ` on stderr, and 2
+
+The raise carries the bare sentence; the command line puts grep's name in
+front of it, as the REPL puts the label in front.
+
+```grep
+(def %cli-run (eval (lit %grep-run-cli) (module grep/cli)))
+(do (sys-dup2 2 8) (def e (file-open-write %cli-err)) (sys-dup2 e 2) (def st (%cli-run (list "a\\1") "x\n")) (sys-dup2 8 2) (file-close e) (display "stderr:\n") (display (file-read-all %cli-err)) (display "status ") (display st) (newline))
+```
+---
+```output
+stderr:
+grep: back-references are not supported
+status 2
+```
+
 ### the cleanup
 
 ```grep

@@ -41,7 +41,7 @@
 (def %grep-run-cli
   (fn (_ argv input)
     (guard (e (if (eq? (Err label e) (lit grep))
-                (do (file-write 2 (string-concat (list (e msg) "\n"))) 2)
+                (do (file-write 2 (string-concat (list "grep: " (e msg) "\n"))) 2)
                 (error e)))
       (grep-run argv input))))
 
