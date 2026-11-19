@@ -200,7 +200,7 @@
     (if (file-exists? path)
       (grep-lines (file-read-all path))
       (Err raise (lit grep)
-        (string-append "grep: can't open pattern file " path) ()))))
+        (string-append "can't open pattern file " path) ()))))
 
 ; input to lines: split on newline, a trailing newline closing the last
 ; line rather than opening an empty one (bytes, the x-awk pattern)

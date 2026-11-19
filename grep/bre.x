@@ -96,7 +96,7 @@
 (def %grep-bad-regex
   (fn (_ pat what)
     (Err raise (lit grep)
-      (string-concat (list "grep: bad regex '" pat "': " what)) pat)))
+      (string-concat (list "bad regex '" pat "': " what)) pat)))
 
 ; A [:NAME:] class as the engine's class entries: the ranges in the C
 ; locale, both cases of a cased class under -i (regcomp's REG_ICASE does the
@@ -205,7 +205,7 @@
                     (match
                       ((if (>= e 49) (<= e 57) #f)         ; \1-\9
                         (Err raise (lit grep)
-                          "grep: back-references are not supported" pat))
+                          "back-references are not supported" pat))
                       ((if bre?
                          (match ((= e 40) #t) ((= e 41) #t)
                                 ((= e 123) #t) ((= e 125) #t)

@@ -121,7 +121,7 @@ a]
 (grep-run (list "a\\1") "x\n")
 ```
 ---
-    Error: grep: grep: back-references are not supported
+    Error: grep: back-references are not supported
 
 ### a class name regcomp does not know, and a bracket left open
 
@@ -130,7 +130,7 @@ a]
 ```
 ---
 ```output
-grep: bad regex '[[:foo:]]': Unknown character class name
-grep: bad regex '[[:]': Unknown character class name
-grep: bad regex '[[:digit:]': Missing ']'
+bad regex '[[:foo:]]': Unknown character class name
+bad regex '[[:]': Unknown character class name
+bad regex '[[:digit:]': Missing ']'
 ```
