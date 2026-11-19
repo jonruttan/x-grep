@@ -64,6 +64,11 @@ library, for its BRE translation and its line reading.
 
     make test           # the suite
     make check          # the suite against tests/contract/known-failures.txt
+    make card           # docs/card.md: its format, and every pattern file run
+
+[docs/card.md](docs/card.md) is the reference page: the options and the
+pattern forms in tables, and pattern files that are run, each beside the
+lines it selects.
 
 `(grep-run ARGV INPUT-TEXT)` is the core, and the suite calls it
 directly.
