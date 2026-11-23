@@ -1,12 +1,12 @@
-; lang.xon -- what this bundle IS.
+; bundle.xon -- what this bundle IS.
 ;
 ; FORMAT (one form per line):
-;   (lang "NAME")               the -l name
+;   (name "NAME")               the -l name
 ;   (dialect NAME)              he | xe | rn -- a REQUIREMENT, not a taste
 ;   (requires-release "TAG")    the x-lang this bundle was built against
-;   (entry "FILE")              loaded AFTER the dialect, not instead of it
+;   (entry NAME)                the module grep/NAME, imported after the dialect; its main starts it
 
-(lang "grep")
+(name "grep")
 
 ; RADON for the same reason x-awk is: a grep that cannot open the files
 ; named on its command line is a demo, and File's doors are radon
@@ -19,8 +19,8 @@
 (dialect he)
 
 ; The x-lang release this bundle is built and tested against. v0.15.0 is the
-; floor: grep/prims.x fetches the string type's handle through
+; floor: lib/grep/prims.x fetches the string type's handle through
 ; (Type named ...), which no earlier release provides.
-(requires-release "v0.59.0")
+(requires-release "v0.61.0")
 
-(entry "run.x")
+(entry run)

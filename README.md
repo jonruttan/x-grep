@@ -18,7 +18,7 @@ spec expectation comes from a real grep run.
 ## Status
 
 Pre-release: no release has been cut. Paired with x-lang v0.59.0
-(`lang.xon` is the checkable row).
+(`bundle.xon` is the checkable row).
 
 ## What it does
 
@@ -46,7 +46,7 @@ Pre-release: no release has been cut. Paired with x-lang v0.59.0
 
 ## Install
 
-It needs x-lang at the release `lang.xon` declares.
+It needs x-lang at the release `bundle.xon` declares.
 
     make install        # into the x on PATH
 
@@ -75,14 +75,14 @@ directly.
 
 ## Layout
 
-    lang.xon          what the bundle is: lang, dialect, pairing, entry
-    run.x             the entry
-    grep/base.x       the parts, assembled
-    grep/prims.x      the platform layer
-    grep/bre.x        BRE, -i and [:classes:] as engine patterns; the -w, -x and -o loops
-    grep/core.x       options, the line loop, the status
-    grep/cli.x        standard input, and grep-main
-    tests/            markdown specs, run by the platform's runner
+    bundle.xon            what the bundle is: name, dialect, release, entry
+    lib/grep/run.x        the entry
+    lib/grep/base.x       the parts, assembled
+    lib/grep/prims.x      the platform layer
+    lib/grep/bre.x        BRE, -i and [:classes:] as engine patterns; the -w, -x and -o loops
+    lib/grep/core.x       options, the line loop, the status
+    lib/grep/cli.x        standard input, and grep-main
+    tests/                markdown specs, run by the platform's runner
 
 ## Licence
 

@@ -1,6 +1,6 @@
 ; # x-grep -- POSIX grep on x-lang
 ;
-; ## run.x -- the entry point
+; ## lib/grep/run.x -- the entry
 ;
 ; @description A POSIX grep: BRE by default, -E for ERE, -F for fixed
 ;   strings, on lib/x/type/regex.x.  The second tool of the self-hosting
@@ -12,11 +12,12 @@
 ; Usage:
 ;   x -l grep -- [-HhnlLoqvsrRiwFE] [-m N] [-A|B|C N] [-e pat]... [-f patfile]... [pat] [file]...
 ;
-; This file contains no path literals: x.sh boots the dialect, arms the bundle
-; root, and cats this file. With operands, grep-main runs and exits with grep's
-; own status (0 match, 1 none, 2 trouble), so the launcher never starts a REPL
-; under a batch run. With no operands it is the x REPL with the core loaded:
-; (grep-run ARGV INPUT) at a prompt.
+; The module grep/run.  Importing it sets the session's globals; main runs
+; grep-main on the operands, which exits with grep's own status (0 match,
+; 1 none, 2 trouble), so the launcher never starts a REPL under a batch run.
+; With no operands it is the x REPL with the core loaded: (grep-run ARGV
+; INPUT) at a prompt.
+(module grep/run)
 (import grep/base grep-version grep-repl-print grep-main)
 
 (set! %lang-name "GREP")
@@ -24,5 +25,9 @@
 (set! %repl-prompt "grep> ")
 (set! %repl-print grep-repl-print)
 
-(let ((ops (rest (Sys args (lit program)))))
-  (unless (null? ops) (grep-main ops)))
+(def main
+  (fn (_)
+    (let ((ops (rest (Sys args (lit program)))))
+      (unless (null? ops) (grep-main ops)))))
+
+(provide grep/run main)
