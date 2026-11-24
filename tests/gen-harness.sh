@@ -33,7 +33,7 @@ fi
 
 # %install-root first (deferred imports resolve against it), the amalgam (never
 # a dialect entry -- those end by starting a REPL), then the bundle root armed
-# exactly as run.x arms it. Nothing under grep/ includes anything from the
+# exactly as x -l arms it. Nothing under lib/grep/ includes anything from the
 # platform: re-including a platform module on a booted tower crashes rather than
 # raising (x-lang#515).
 cat > "$OUT" <<EOF
@@ -41,7 +41,7 @@ cat > "$OUT" <<EOF
 ; commit: the two absolute paths below are facts of this machine.
 (def %install-root "$X_ROOT")
 (include "$X_BASE")
-(import-path! "$BUNDLE")
+(import-path! "$BUNDLE/lib")
 (import grep/base grep-run grep-xlate-bre grep-repl-print)
 (import grep/prims file-close file-open-write file-read-all file-read-fd file-unlink file-write string-length sys-dup2)
 (set! %repl-print grep-repl-print)
